@@ -1,4 +1,4 @@
-package TestingSystem_Assignment_1;
+package TestingSystem_Assignment_2;
 
 public class Department {
     int departmentID;

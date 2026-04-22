@@ -122,7 +122,7 @@ public class Program {
 
         Question q2 = new Question();
         q2.questionID = 2;
-        q2.content = "SQL dung de lam gi?";
+        q2.content = "SQL dung de lam g i?";
         q2.category = cate2;
         q2.type = type2;
         q2.creator = acc2;
@@ -207,5 +207,10 @@ public class Program {
         System.out.println("Answer: " + ans1.content);
         System.out.println("Exam: " + exam1.title);
         System.out.println("ExamQuestion: " + eq1.exam.title + " - " + eq1.question.content);
+        System.out.println(acc2.department.departmentID + "-" + acc2.department.departmentName);
+        System.out.println(acc2.department);
+
+        String checkAccExistDe = (acc2.department == null) ? "Nhân viên chưa có phòng ban" : "Phòng ban của nhân viên này là " + acc2.department.departmentName;
+        System.out.println(checkAccExistDe);
     }
 }
