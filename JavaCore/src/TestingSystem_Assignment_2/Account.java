@@ -11,4 +11,17 @@ public class Account {
     Position position;
     LocalDateTime createDate;
     Group[] groups;
+
+    @Override
+    public String toString() {
+        return "Account{" +
+                "id=" + accountID +
+                ", email='" + email + '\'' +
+                ", username='" + username + '\'' +
+                ", fullName='" + fullName + '\'' +
+                ", department='" + department.departmentName + '\'' +
+                ", position='" + position.positionName + '\'' +
+                ", createDate=" + createDate +
+                '}';
+    }
 }

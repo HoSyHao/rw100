@@ -1,6 +1,6 @@
-package TestingSystem_Assignment_1;
+package TestingSystem_Assignment_3;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public class Account {
     int accountID;
@@ -9,17 +9,18 @@ public class Account {
     String fullName;
     Department department;
     Position position;
-    LocalDate createDate;
+    LocalDateTime createDate;
+    Group[] groups;
 
     @Override
     public String toString() {
         return "Account{" +
-                "accountID=" + accountID +
+                "id=" + accountID +
                 ", email='" + email + '\'' +
                 ", username='" + username + '\'' +
                 ", fullName='" + fullName + '\'' +
-                ", department=" + department +
-                ", position=" + position +
+                ", department='" + department.departmentName + '\'' +
+                ", position='" + position.positionName + '\'' +
                 ", createDate=" + createDate +
                 '}';
     }
