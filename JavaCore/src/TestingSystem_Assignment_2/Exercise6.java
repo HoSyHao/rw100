@@ -31,8 +31,8 @@ public class Exercise6 {
 
         Account[] accounts = createSampleAccounts();
 
-        for (int i = 0; i < accounts.length; i++) {
-            System.out.println(accounts[i]);
+        for (Account account : accounts) {
+            System.out.println(account);
         }
     }
 

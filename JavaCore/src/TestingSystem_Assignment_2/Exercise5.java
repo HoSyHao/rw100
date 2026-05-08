@@ -26,16 +26,7 @@ public class Exercise5 {
 
     public static void main(String[] args) {
         seedData();
-        question1();
-        question2();
-        question3();
-        question4();
-        question5();
-        question6();
-        question7();
         question8();
-        question9();
-        question11();
     }
 
     // Question 1:
@@ -172,6 +163,15 @@ public class Exercise5 {
             System.out.println("0. Thoát");
 
             int choice = inputInt("Mời bạn nhập vào chức năng muốn sử dụng: ");
+
+//            while (true) {
+//                try {
+//                    System.out.print(message);
+//                    return Integer.parseInt(scanner.nextLine().trim());
+//                } catch (Exception e) {
+//                    System.out.println("Vui lòng nhập số nguyên!");
+//                }
+//            }
 
             switch (choice) {
                 case 1:

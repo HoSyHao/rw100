@@ -3,37 +3,45 @@ package TestingSystem_Assignment_3;
 import java.util.Scanner;
 
 public class Exercise4 {
+    public static void main(String[] args) {
+        question16();
+    }
 
-    private final Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
 
     // Question 1:
     // Nhập một xâu kí tự, đếm số lượng các từ trong xâu kí tự đó
     // các từ có thể cách nhau bằng nhiều khoảng trắng
-    public void question1() {
+    public static void question1() {
         String input = inputString("Nhập chuỗi: ");
 
-        String normalized = input.trim().replaceAll("\\s+", " ");
+        String[] words = input.trim().split("\\s+");
 
-        if (normalized.isEmpty()) {
+        if (words.length == 0) {
             System.out.println("Số từ: 0");
         } else {
-            System.out.println("Số từ: " + normalized.split(" ").length);
+            System.out.println("Số từ: " + words.length);
         }
     }
 
     // Question 2:
     // Nhập hai xâu kí tự s1, s2 nối xâu kí tự s2 vào sau xâu s1
-    public void question2() {
+    public static void question2() {
         String s1 = inputString("Nhập s1: ");
         String s2 = inputString("Nhập s2: ");
 
-        System.out.println("Kết quả: " + s1 + s2);
+        //Ưu tiên: StringBuilder nhanh hơn StringBuffer vì không tốn thời gian đóng/mở các thread thao tác string
+
+        StringBuilder s3 = new StringBuilder();
+        s3.append(s1).append(s2);
+
+        System.out.println("Kết quả: " + s3);
     }
 
     // Question 3:
     // Viết chương trình để người dùng nhập vào tên và kiểm tra,
     // nếu tên chưa viết hoa chữ cái đầu thì viết hoa lên
-    public void question3() {
+    public static void question3() {
         String name = inputString("Nhập tên: ").trim();
 
         if (name.isEmpty()) {
@@ -41,14 +49,18 @@ public class Exercise4 {
             return;
         }
 
-        name = name.substring(0, 1).toUpperCase() + name.substring(1);
+        String[] names = name.split("\\s+" );
+        StringBuilder stringBuilder = new StringBuilder();
+        for (String s : names){
+            stringBuilder.append(Character.toUpperCase(s.charAt(0))).append(s.substring(1)).append(" ");
+        }
 
-        System.out.println("Tên sau chuẩn hóa: " + name);
+        System.out.println("Tên sau chuẩn hóa: " + stringBuilder);
     }
 
     // Question 4:
     // Viết chương trình để người dùng nhập vào tên in từng ký tự trong tên của người dùng ra
-    public void question4() {
+    public static void question4() {
         String name = inputString("Nhập tên: ");
 
         for (int i = 0; i < name.length(); i++) {
@@ -59,7 +71,7 @@ public class Exercise4 {
     // Question 5:
     // Viết chương trình để người dùng nhập vào họ,
     // sau đó yêu cầu người dùng nhập vào tên và hệ thống sẽ in ra họ và tên đầy đủ
-    public void question5() {
+    public static void question5() {
         String lastName = inputString("Nhập họ: ").trim();
         String firstName = inputString("Nhập tên: ").trim();
 
@@ -69,26 +81,28 @@ public class Exercise4 {
     // Question 6:
     // Viết chương trình yêu cầu người dùng nhập vào họ và tên đầy đủ
     // và sau đó hệ thống sẽ tách ra họ, tên, tên đệm
-    public void question6() {
-        String fullName = normalizeSpace(inputString("Nhập họ tên đầy đủ: "));
+    public static void question6() {
+//        System.out.println("Nhập họ tên đầy đủ: ");
+//        String fullName = scanner.nextLine();
+        String fullName = inputString("Nhập họ tên đầy đủ: ");
 
-        String[] words = fullName.split(" ");
+        String[] words = fullName.trim().split("\\s+");
 
         if (words.length < 2) {
             System.out.println("Cần nhập ít nhất họ và tên!");
             return;
         }
 
-        String lastName = words[0];
-        String firstName = words[words.length - 1];
+        StringBuilder lastName = new StringBuilder();
+        StringBuilder firstName = new StringBuilder();
 
-        String middleName = "";
+        lastName.append(Character.toUpperCase(words[0].charAt(0))).append(words[0].substring(1)).append(" ");
+        firstName.append(Character.toUpperCase(words[words.length - 1].charAt(0))).append(words[words.length - 1].substring(1));
+
+        StringBuilder middleName = new StringBuilder();
+
         for (int i = 1; i < words.length - 1; i++) {
-            middleName += words[i];
-
-            if (i < words.length - 2) {
-                middleName += " ";
-            }
+            middleName.append(Character.toUpperCase(words[i].charAt(0))).append(words[i].substring(1)).append(" ");
         }
 
         System.out.println("Họ là: " + lastName);
@@ -101,34 +115,41 @@ public class Exercise4 {
     // và chuẩn hóa họ và tên của họ:
     // a) Xóa dấu cách ở đầu và cuối và giữa của chuỗi người dùng nhập vào
     // b) Viết hoa chữ cái mỗi từ của người dùng
-    public void question7() {
+    public static void question7() {
         String fullName = inputString("Nhập họ tên đầy đủ: ");
 
-        String normalized = normalizeFullName(fullName);
+         String[] normalized = fullName.trim().split("\\s+");
+         StringBuilder result = new StringBuilder();
+         for(String s : normalized){
+             result.append(Character.toUpperCase(s.charAt(0)))
+                     .append(s.substring(1))
+                     .append(" ");
+        }
+//        String normalized = normalizeFullName(fullName);
 
-        System.out.println("Họ tên sau chuẩn hóa: " + normalized);
+        System.out.println("Họ tên sau chuẩn hóa: " + result);
     }
 
     // Question 8:
     // In ra tất cả các group có chứa chữ "Java"
-    public void question8() {
+    public static void question8() {
         Group[] groups = createSampleGroups();
 
         for (Group group : groups) {
             if (group.groupName.contains("Java")) {
-                System.out.println(group);
+                System.out.println(group.groupName);
             }
         }
     }
 
     // Question 9:
     // In ra tất cả các group "Java"
-    public void question9() {
+    public static void question9() {
         Group[] groups = createSampleGroups();
 
         for (Group group : groups) {
             if (group.groupName.equals("Java")) {
-                System.out.println(group);
+                System.out.println(group.groupName);
             }
         }
     }
@@ -136,50 +157,62 @@ public class Exercise4 {
     // Question 10:
     // Kiểm tra 2 chuỗi có là đảo ngược của nhau hay không.
     // Nếu có xuất ra “OK” ngược lại “KO”.
-    public void question10() {
-        String s1 = inputString("Nhập chuỗi 1: ");
-        String s2 = inputString("Nhập chuỗi 2: ");
+    public static void question10() {
+        System.out.print("Nhập chuỗi 1: ");
+        StringBuilder s1 = new StringBuilder(scanner.nextLine());
+        System.out.print("Nhập chuỗi 2: ");
+        StringBuilder s2 = new StringBuilder(scanner.nextLine());
 
         if (s1.length() != s2.length()) {
             System.out.println("KO");
             return;
         }
 
-        for (int i = 0; i < s1.length(); i++) {
-            if (s1.charAt(i) != s2.charAt(s2.length() - 1 - i)) {
-                System.out.println("KO");
-                return;
-            }
+        String reversed = new StringBuilder(s1).reverse().toString();
+
+        if (reversed.equals(s2.toString())) {
+            System.out.println("OK");
+        } else {
+            System.out.println("KO");
         }
 
-        System.out.println("OK");
+//        for (int i = 0; i < s1.length(); i++) {
+//            if (s1.charAt(i) != s2.charAt(s2.length() - 1 - i)) {
+//                System.out.println("KO");
+//                return;
+//            }
+//        }
+//
+//        System.out.println("OK");
     }
 
     // Question 11:
     // Tìm số lần xuất hiện ký tự "a" trong chuỗi
-    public void question11() {
+    public static void question11() {
         String input = inputString("Nhập chuỗi: ");
+        int count = input.replaceAll("[^a]", "").length();
 
-        int count = 0;
 
-        for (int i = 0; i < input.length(); i++) {
-            if (input.charAt(i) == 'a') {
-                count++;
-            }
-        }
+//        int count = 0;
+//
+//        for (int i = 0; i < input.length(); i++) {
+//            if (input.charAt(i) == 'a') {
+//                count++;
+//            }
+//        }
 
         System.out.println("Số lần xuất hiện ký tự a: " + count);
     }
 
     // Question 12:
     // Đảo ngược chuỗi sử dụng vòng lặp
-    public void question12() {
+    public static void question12() {
         String input = inputString("Nhập chuỗi: ");
 
-        String reversed = "";
+        StringBuilder reversed = new StringBuilder();
 
         for (int i = input.length() - 1; i >= 0; i--) {
-            reversed += input.charAt(i);
+            reversed.append(input.charAt(i));
         }
 
         System.out.println("Chuỗi đảo ngược: " + reversed);
@@ -188,11 +221,11 @@ public class Exercise4 {
     // Question 13:
     // Kiểm tra một chuỗi có chứa chữ số hay không,
     // nếu có in ra false ngược lại true.
-    public void question13() {
+    public static void question13() {
         String input = inputString("Nhập chuỗi: ");
 
         if (input == null || input.isEmpty()) {
-            System.out.println(false);
+            System.out.println(true);
             return;
         }
 
@@ -208,19 +241,19 @@ public class Exercise4 {
 
     // Question 14:
     // Cho một chuỗi str, chuyển các ký tự được chỉ định sang một ký tự khác cho trước.
-    public void question14() {
+    public static void question14() {
         String str = inputString("Nhập chuỗi: ");
 
         char oldChar = inputChar("Nhập ký tự cần thay: ");
         char newChar = inputChar("Nhập ký tự mới: ");
 
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
         for (int i = 0; i < str.length(); i++) {
             if (str.charAt(i) == oldChar) {
-                result += newChar;
+                result.append(newChar);
             } else {
-                result += str.charAt(i);
+                result.append(str.charAt(i));
             }
         }
 
@@ -230,23 +263,29 @@ public class Exercise4 {
     // Question 15:
     // Đảo ngược các ký tự của chuỗi cách nhau bởi dấu cách mà không dùng thư viện.
     // Ví dụ: "    I am developer      " => "developer am I".
-    public void question15() {
-        String input = normalizeSpace(inputString("Nhập chuỗi: "));
+    public static void question15() {
+//        String input = normalizeSpace(inputString("Nhập chuỗi: "));
+        System.out.print("Nhập chuỗi: ");
+        String input = scanner.nextLine();
 
         if (input.isEmpty()) {
             System.out.println("");
             return;
         }
 
-        String[] words = input.split(" ");
+        String[] words = input.trim().split("\\s+");
 
-        String result = "";
+        StringBuilder result = new StringBuilder();
 
         for (int i = words.length - 1; i >= 0; i--) {
-            result += words[i];
+            String word = words[i];
+
+            for (int j = word.length() - 1; j >= 0; j--) {
+                result.append(word.charAt(j));
+            }
 
             if (i > 0) {
-                result += " ";
+                result.append(" ");
             }
         }
 
@@ -257,7 +296,7 @@ public class Exercise4 {
     // Cho một chuỗi str và số nguyên n >= 0.
     // Chia chuỗi str ra làm các phần bằng nhau với n ký tự.
     // Nếu chuỗi không chia được thì xuất ra màn hình “KO”.
-    public void question16() {
+    public static void question16() {
         String str = inputString("Nhập chuỗi: ");
         int n = inputNonNegativeInt("Nhập n: ");
 
@@ -271,12 +310,12 @@ public class Exercise4 {
         }
     }
 
-    private String inputString(String message) {
+    private static String inputString(String message) {
         System.out.print(message);
         return scanner.nextLine();
     }
 
-    private int inputNonNegativeInt(String message) {
+    private static int inputNonNegativeInt(String message) {
         while (true) {
             try {
                 System.out.print(message);
@@ -293,7 +332,7 @@ public class Exercise4 {
         }
     }
 
-    private char inputChar(String message) {
+    private static char inputChar(String message) {
         while (true) {
             String input = inputString(message);
 
@@ -329,7 +368,7 @@ public class Exercise4 {
         return result;
     }
 
-    private Group[] createSampleGroups() {
+    private static Group[] createSampleGroups() {
         Group g1 = new Group();
         g1.groupID = 1;
         g1.groupName = "Java";

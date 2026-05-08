@@ -5,7 +5,11 @@ import java.util.Scanner;
 
 public class Exercise6 {
 
-    private final Scanner scanner = new Scanner(System.in);
+    private static final Scanner scanner = new Scanner(System.in);
+    public static void main(String[] args){
+        question1();
+        question2();
+    }
 
     // Exercise 6: Debug
     //
@@ -15,7 +19,7 @@ public class Exercise6 {
     // thì variable maxValue đang có giá trị bao nhiêu
     // b) Tại vòng lặp i = 4, hãy thử set lại maxValue = 5
     // c) Hãy tìm bug và sửa lại cho bài trên để tìm Max Value và Min Value cho đúng
-    public void question1() {
+    public static void question1() {
         int[] numbers = {1, 5, 2, 8, 4, 9, 3};
 
         System.out.println("Array: " + Arrays.toString(numbers));
@@ -30,7 +34,7 @@ public class Exercise6 {
     // B3: Nhập thông tin cán bộ vào
     // Nhưng hệ thống vẫn yêu cầu nhập thêm người nữa.
     // Debug để tìm lỗi và sửa lỗi.
-    public void question2() {
+    public static void question2() {
         while (true) {
             System.out.println("========== MENU ==========");
             System.out.println("1. Thêm mới cán bộ");
@@ -58,7 +62,7 @@ public class Exercise6 {
         }
     }
 
-    public int getMaxValue(int[] numbers) {
+    public static int getMaxValue(int[] numbers) {
         if (numbers == null || numbers.length == 0) {
             throw new IllegalArgumentException("Array không được null hoặc rỗng!");
         }
@@ -80,7 +84,7 @@ public class Exercise6 {
         return maxValue;
     }
 
-    public int getMinValue(int[] numbers) {
+    public static int getMinValue(int[] numbers) {
         if (numbers == null || numbers.length == 0) {
             throw new IllegalArgumentException("Array không được null hoặc rỗng!");
         }
@@ -96,7 +100,7 @@ public class Exercise6 {
         return minValue;
     }
 
-    private void addOfficer() {
+    private static void addOfficer() {
         System.out.println("------------ ADD OFFICER -----------");
 
         String fullName = inputRequiredString("Nhập họ tên cán bộ: ");
@@ -109,7 +113,7 @@ public class Exercise6 {
         System.out.println("Địa chỉ: " + address);
     }
 
-    private boolean askContinue() {
+    private static boolean askContinue() {
         while (true) {
             String answer = inputRequiredString("Bạn có muốn nhập thêm người nữa không? (Có/Không): ");
 
@@ -131,7 +135,7 @@ public class Exercise6 {
         }
     }
 
-    private int inputInt(String message) {
+    private static int inputInt(String message) {
         while (true) {
             try {
                 System.out.print(message);
@@ -142,7 +146,7 @@ public class Exercise6 {
         }
     }
 
-    private String inputRequiredString(String message) {
+    private static String inputRequiredString(String message) {
         while (true) {
             System.out.print(message);
             String input = scanner.nextLine().trim();
