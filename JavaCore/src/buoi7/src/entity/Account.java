@@ -15,14 +15,14 @@ public class Account {
 
     public Account() {}
 
-    public Account(int id, String email, String username, String fullName,Department department, Position position) {
+    public Account(int id, String email, String username, String fullName,Department department, Position position, LocalDateTime createDate) {
         this.accountID = id;
         this.email = email;
         this.username = username;
         this.fullName = fullName;
         this.department = department;
         this.position = position;
-        this.createDate = LocalDateTime.now();
+        this.createDate = createDate != null ? createDate : LocalDateTime.now();
     }
 
 
