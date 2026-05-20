@@ -140,12 +140,16 @@ public class AccountFunc {
             break;
         }
 
-        System.out.print("Nhập fullname: ");
-        fullname = sc.nextLine().trim();
-        if (fullname.isBlank()) {
-            System.out.println("Fullname không được để trống!");
-            return;
+        while (true) {
+            System.out.print("Nhập fullname: ");
+            fullname = sc.nextLine().trim();
+            if (fullname.isBlank()) {
+                System.out.println("Fullname không được để trống!");
+            } else {
+                break;
+            }
         }
+
 
         // Department ID (nếu nhập phải tồn tại)
         while (true) {
@@ -200,31 +204,44 @@ public class AccountFunc {
         }
 
         // Email mới (nếu nhập phải đúng format và không trùng)
-        System.out.print("Nhập email mới (Enter để bỏ qua): ");
-        email = sc.nextLine().trim();
-        if (!email.isBlank()) {
-            if (!isValidEmail(email)) {
-                System.out.println("Email không đúng định dạng!");
-                return;
-            }
-            if (accountController.checkAccountExists(email, null, accountId)) {
-                System.out.println("Email đã tồn tại bởi tài khoản khác!");
-                return;
+        while (true) {
+            System.out.print("Nhập email mới (Enter để bỏ qua): ");
+            email = sc.nextLine().trim();
+            if (!email.isBlank()) {
+                if (!isValidEmail(email)) {
+                    System.out.println("Email không đúng định dạng!");
+                    continue;
+                }
+                if (accountController.checkAccountExists(email, null, accountId)) {
+                    System.out.println("Email đã tồn tại bởi tài khoản khác!");
+                }
+            } else {
+                break;
             }
         }
+
 
         // Username mới (nếu nhập phải không trùng)
-        System.out.print("Nhập username mới (Enter để bỏ qua): ");
-        username = sc.nextLine().trim();
-        if (!username.isBlank()) {
-            if (accountController.checkAccountExists(null, username, accountId)) {
-                System.out.println("Username đã tồn tại bởi tài khoản khác!");
-                return;
+        while (true) {
+            System.out.print("Nhập username mới (Enter để bỏ qua): ");
+            username = sc.nextLine().trim();
+            if (!username.isBlank()) {
+                if (accountController.checkAccountExists(null, username, accountId)) {
+                    System.out.println("Username đã tồn tại bởi tài khoản khác!");
+                }
+            } else  {
+                break;
             }
         }
 
-        System.out.print("Nhập fullname mới (Enter để bỏ qua): ");
-        fullname = sc.nextLine().trim();
+        while (true) {
+            System.out.print("Nhập fullname mới (Enter để bỏ qua): ");
+            fullname = sc.nextLine().trim();
+            if (fullname.isBlank()) {
+                break;
+            }
+        }
+
 
         // Department ID mới
         while (true) {
