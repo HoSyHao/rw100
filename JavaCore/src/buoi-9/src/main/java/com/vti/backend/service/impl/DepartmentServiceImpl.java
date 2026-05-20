@@ -39,4 +39,9 @@ public class DepartmentServiceImpl implements IDepartmentService {
     public boolean updateDepartment(int id, String departmentName) {
         return departmentRepository.updateDepartment(id, departmentName);
     }
+
+    @Override
+    public boolean checkExistDepartment(String departmentName, Integer departmentId) {
+        return departmentRepository.checkExistDepartment(departmentName, departmentId);
+    }
 }

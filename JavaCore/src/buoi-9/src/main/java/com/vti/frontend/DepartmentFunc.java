@@ -4,9 +4,11 @@ import com.vti.backend.controller.DepartmentController;
 import com.vti.entity.Department;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 
 import static com.vti.utils.InputUtils.inputInt;
+import static com.vti.utils.InputUtils.inputOptionalInt;
 
 public class DepartmentFunc {
     private final Scanner sc = new Scanner(System.in);
@@ -78,20 +80,47 @@ public class DepartmentFunc {
     }
 
     public void createDepartment() {
-        System.out.print("Nhập tên phòng ban: ");
-        String name = sc.nextLine();
-        boolean check = departmentController.createDepartment(name);
-        if (check) {
-            System.out.println("Thêm mới phòng ban " + name + " thành công!!");
+        String name;
+        while (true) {
+            System.out.print("Nhập tên phòng ban (Hoặc nhấn Enter để hủy): ");
+            name = sc.nextLine();
+            if (name.isBlank()) {
+                System.out.println("Đã hủy thao tác thêm mới.");
+                return;
+            }
+            if (departmentController.checkExistDepartment(name.trim(), null)) {
+                System.out.println("Tên '" + name.trim() + "' đã tồn tại! Vui lòng nhập tên khác.");
+            } else {
+                break;
+            }
+        }
+
+        boolean isCreated = departmentController.createDepartment(name.trim());
+        if (isCreated) {
+            System.out.println("Thêm mới phòng ban " + name.trim() + " thành công!!");
         } else {
             System.out.println("Thêm không thành công");
         }
     }
 
     public void deleteDepartment() {
-        int id = inputInt(sc, "Nhập id: ");
-        boolean check = departmentController.deleteDepartment(id);
-        if (check) {
+        Integer id;
+        while (true) {
+            id = inputOptionalInt(sc, "Nhập ID cần xóa (Hoặc nhấn Enter để hủy): ");
+
+            if (id == null) {
+                System.out.println("Đã hủy thao tác xóa.");
+                return;
+            }
+            if (!departmentController.checkExistDepartment(null, id)) {
+                System.out.println("ID '" + id + "' không tồn tại! Vui lòng nhập id khác.");
+            } else {
+                break;
+            }
+        }
+
+        boolean isDeleted = departmentController.deleteDepartment(id);
+        if (isDeleted) {
             System.out.println("Xóa phòng ban " + id + " thành công!!");
         } else {
             System.out.println("Xóa không thành công");
@@ -99,12 +128,40 @@ public class DepartmentFunc {
     }
 
     public void updateDepartment() {
-        int id = inputInt(sc, "Nhập id: ");
-        System.out.print("Nhập tên muốn cập nhật: ");
-        String name = sc.nextLine();
-        boolean check = departmentController.updateDepartment(id, name);
-        if (check) {
-            System.out.println("Cập nhật tên phòng ban" + id + " : " + name + " thành công!!");
+        Integer id;
+        String name;
+        while (true) {
+            id = inputOptionalInt(sc, "Nhập ID cần cập nhật (Hoặc nhấn Enter để hủy): ");
+
+            if (id == null) {
+                System.out.println("Đã hủy thao tác cập nhật.");
+                return;
+            }
+
+            if (!departmentController.checkExistDepartment(null, id)) {
+                System.out.println("ID '" + id + "' không tồn tại! Vui lòng nhập id khác.");
+            } else {
+                break;
+            }
+        }
+
+        while (true) {
+            System.out.print("Nhập tên muốn cập nhật (Hoặc nhấn Enter để hủy): ");
+            name = sc.nextLine();
+            if (name.isBlank()) {
+                System.out.println("Đã hủy thao tác cập nhật.");
+                return;
+            }
+            if (departmentController.checkExistDepartment(name.trim(), id)) {
+                System.out.println("Tên '" + name.trim() + "' đã tồn tại! Vui lòng nhập tên khác.");
+            } else {
+                break;
+            }
+        }
+
+        boolean isUpdated = departmentController.updateDepartment(id, name.trim());
+        if (isUpdated) {
+            System.out.println("Cập nhật tên phòng ban " + id + ": " + name.trim() + " thành công!!");
         } else {
             System.out.println("Cập nhật không thành công");
         }

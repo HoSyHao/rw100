@@ -61,12 +61,12 @@ public class PositionRepositoryImpl implements IPositionRepository {
 
     @Override
     public boolean createPosition(String name) {
-        String insert = "insert into `position` (position_name) values (?);";
+        String insert = "insert into `position` (position_name) values UPPER(?);";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(insert);
         ) {
-            stmt.setString(1, name.trim().toUpperCase());
+            stmt.setString(1, name);
             int rows = stmt.executeUpdate();
             return (rows > 0);
 
@@ -79,13 +79,13 @@ public class PositionRepositoryImpl implements IPositionRepository {
     @Override
     public boolean updatePosition(String name, int id) {
         String update = "UPDATE `position`\n" +
-                "SET position_name = ?\n" +
+                "SET position_name = UPPER(?)\n" +
                 "WHERE position_id = ?;";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(update);
         ) {
-            stmt.setString(1, name.trim().toUpperCase());
+            stmt.setString(1, name);
             stmt.setInt(2, id);
             int rows = stmt.executeUpdate();
             return (rows > 0);
@@ -108,6 +108,35 @@ public class PositionRepositoryImpl implements IPositionRepository {
             return (rows > 0);
 
         } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean checkExistPosition(String name, Integer id) {
+        String query = " SELECT COUNT(1) FROM position " +
+                "WHERE (position_name = UPPER(?) AND ? IS NULL) " +
+                "   OR (position_id = ? AND ? IS NULL) " +
+                "   OR (position_name = UPPER(?) AND position_id <> ?);";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+        ) {
+            stmt.setObject(1, name);
+            stmt.setObject(2, id);
+
+            stmt.setObject(3, id);
+            stmt.setObject(4, name);
+
+            stmt.setObject(5, name);
+            stmt.setObject(6, id);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return false;

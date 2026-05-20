@@ -3,10 +3,8 @@ package com.vti.backend.repository.impl;
 import com.vti.backend.repository.IDepartmentRepository;
 import com.vti.entity.Department;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.lang.reflect.Type;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -94,13 +92,12 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
 
     @Override
     public boolean createDepartment(String departmentName) {
-        List<Department> departmentList = new ArrayList<>();
         String insert = "insert into `department` (department_name) values (?);";
 
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(insert);
         ) {
-            stmt.setString(1, departmentName.trim());
+            stmt.setString(1, departmentName);
             int rows = stmt.executeUpdate(); // Number of lines affacted in db
             return rows > 0;
         } catch (Exception e) {
@@ -111,7 +108,6 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
 
     @Override
     public boolean deleteDepartment(int id) {
-        List<Department> departmentList = new ArrayList<>();
         String delete = "delete from `department` where department_id = ?;";
 
         try (Connection conn = getConnection();
@@ -128,7 +124,6 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
 
     @Override
     public boolean updateDepartment(int id, String departmentName) {
-        List<Department> departmentList = new ArrayList<>();
         String update = "UPDATE department\n" +
                 "SET department_name = ?\n" +
                 "WHERE department_id = ?;";
@@ -136,7 +131,7 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
         try (Connection conn = getConnection();
              PreparedStatement stmt = conn.prepareStatement(update);
         ) {
-            stmt.setString(1, departmentName.trim());
+            stmt.setString(1, departmentName);
             stmt.setInt(2, id);
             int rows = stmt.executeUpdate(); // Number of lines affacted in db
             return rows > 0;
@@ -145,4 +140,34 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
         }
         return false;
     }
+
+    @Override
+    public boolean checkExistDepartment(String departmentName, Integer departmentId) {
+        String query = " SELECT COUNT(1) FROM department " +
+                "WHERE (LOWER(department_name) = LOWER(?) AND ? IS NULL) " +
+                "   OR (department_id = ? AND ? IS NULL) " +
+                "   OR (LOWER(department_name) = LOWER(?) AND department_id <> ?);";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+        ) {
+            stmt.setObject(1, departmentName);
+            stmt.setObject(2, departmentId);
+
+            stmt.setObject(3, departmentId);
+            stmt.setObject(4, departmentName);
+
+            stmt.setObject(5, departmentName);
+            stmt.setObject(6, departmentId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }

@@ -2,11 +2,14 @@ package com.vti.frontend;
 
 import com.vti.backend.controller.PositionController;
 import com.vti.entity.Position;
+import com.vti.enums.PositionName;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 import static com.vti.utils.InputUtils.inputInt;
+import static com.vti.utils.InputUtils.inputOptionalInt;
 
 public class PositionFunc {
     private final Scanner sc = new Scanner(System.in);
@@ -79,30 +82,103 @@ public class PositionFunc {
     }
 
     public void createPosition() {
-        System.out.print("Nhập tên chức vụ: ");
-        String name = sc.nextLine();
-        boolean check = positionController.createPosition(name);
-        if (check) {
-            System.out.println("Thêm mới chức vụ " + name + " thành công!!");
+        String name;
+        while (true) {
+            System.out.print("Nhập tên chức vụ (Hoặc nhấn Enter để hủy): ");
+            name = sc.nextLine();
+            if (name.isBlank()) {
+                System.out.println("Đã hủy thao tác thêm mới.");
+                return;
+            }
+
+            // Validate để không báo lỗi enum ở DB
+            try {
+                PositionName.valueOf(name.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Tên chức vụ không hợp lệ!");
+                continue;
+            }
+
+            if (positionController.checkExistPosition(name.trim(), null)) {
+                System.out.println("Tên '" + name.trim() + "' đã tồn tại! Vui lòng nhập tên khác.");
+            } else {
+                break;
+            }
+        }
+
+        boolean isCreated = positionController.createPosition(name.trim());
+        if (isCreated) {
+            System.out.println("Thêm mới chức vụ " + name.trim() + " thành công!!");
         } else {
             System.out.println("Thêm không thành công");
         }
     }
 
     public void updatePosition() {
-        int id = inputInt(sc, "Nhập id: ");
-        System.out.print("Nhập tên muốn cập nhật: ");
-        String name = sc.nextLine();
-        boolean check = positionController.updatePosition(name, id);
+        Integer id;
+        String name;
+        while (true) {
+            id = inputOptionalInt(sc, "Nhập ID cần cập nhật (Hoặc nhấn Enter để hủy): ");
+
+            if (id == null) {
+                System.out.println("Đã hủy thao tác cập nhật.");
+                return;
+            }
+
+            if (!positionController.checkExistPosition(null, id)) {
+                System.out.println("ID '" + id + "' không tồn tại! Vui lòng nhập id khác.");
+            } else {
+                break;
+            }
+        }
+
+        while (true) {
+            System.out.print("Nhập tên muốn cập nhật (Hoặc nhấn Enter để hủy): ");
+            name = sc.nextLine();
+            if (name.isBlank()) {
+                System.out.println("Đã hủy thao tác cập nhật.");
+                return;
+            }
+
+            // Validate để không báo lỗi enum ở DB
+            try {
+                PositionName.valueOf(name.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                System.out.println("Tên chức vụ không hợp lệ!");
+                continue;
+            }
+
+            if (positionController.checkExistPosition(name.trim(), id)) {
+                System.out.println("Tên '" + name.trim() + "' đã tồn tại! Vui lòng nhập tên khác.");
+            } else {
+                break;
+            }
+        }
+
+        boolean check = positionController.updatePosition(name.trim(), id);
         if (check) {
-            System.out.println("Cập nhật tên chức vụ" + id + ": " + name + " thành công!!");
+            System.out.println("Cập nhật tên chức vụ " + id + ": " + name.trim() + " thành công!!");
         } else {
             System.out.println("Cập nhật không thành công");
         }
     }
 
     public void deletePosition() {
-        int id = inputInt(sc, "Nhập id: ");
+        Integer id;
+        while (true) {
+            id = inputOptionalInt(sc, "Nhập ID cần xóa (Hoặc nhấn Enter để hủy): ");
+
+            if (id == null) {
+                System.out.println("Đã hủy thao tác xóa.");
+                return;
+            }
+            if (!positionController.checkExistPosition(null, id)) {
+                System.out.println("ID '" + id + "' không tồn tại! Vui lòng nhập id khác.");
+            } else {
+                break;
+            }
+        }
+
         boolean check = positionController.deletePosition(id);
         if (check) {
             System.out.println("Xóa chức vụ " + id + " thành công!!");

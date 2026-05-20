@@ -28,4 +28,8 @@ public class PositionController {
     public boolean deletePosition(int id) {
         return positionService.deletePosition(id);
     }
+
+    public boolean checkExistPosition(String name, Integer id) {
+        return positionService.checkExistPosition(name, id);
+    }
 }

@@ -214,9 +214,9 @@ public class AccountRepositoryImpl implements IAccountRepository {
              PreparedStatement stmt = conn.prepareStatement(update)) {
 
             // nếu rỗng -> null
-            stmt.setString(1, email.isBlank() ? null : email.trim());
-            stmt.setString(2, username.isBlank() ? null : username.trim());
-            stmt.setString(3, fullname.isBlank() ? null : fullname.trim());
+            stmt.setObject(1, email == null ? null : email.trim());
+            stmt.setString(2, username == null ? null : username.trim());
+            stmt.setString(3, fullname == null ? null : fullname.trim());
 
             // Integer mới set null được
             if (departmentId == null) {
@@ -259,4 +259,37 @@ public class AccountRepositoryImpl implements IAccountRepository {
         }
         return false;
     }
+
+    @Override
+    public boolean checkAccountExists(String email, String username, Integer accountId) {
+        String query = " SELECT COUNT(1) FROM account " +
+                "WHERE ((email = ? OR username = ?) AND ? IS NULL) " +
+                "   OR (account_id = ? AND ? IS NULL AND ? IS NULL) " +
+                "   OR ((email = ? OR username = ?) AND account_id <> ?);";
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+        ) {
+            stmt.setObject(1, email);
+            stmt.setObject(2, username);
+            stmt.setObject(3, accountId);
+
+            stmt.setObject(4, accountId);
+            stmt.setObject(5, username);
+            stmt.setObject(6, email);
+
+            stmt.setObject(7, email);
+            stmt.setObject(8, username);
+            stmt.setObject(9, accountId);
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
 }

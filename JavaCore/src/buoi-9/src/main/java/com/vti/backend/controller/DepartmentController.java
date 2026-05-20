@@ -32,4 +32,8 @@ public class DepartmentController {
     public boolean updateDepartment(int id, String departmentName) {
         return departmentService.updateDepartment(id, departmentName);
     }
+
+    public boolean checkExistDepartment(String departmentName, Integer departmentId) {
+        return departmentService.checkExistDepartment(departmentName, departmentId);
+    }
 }

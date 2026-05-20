@@ -38,4 +38,9 @@ public class AccountServiceImpl implements IAccountService {
     public boolean deleteAccount(int accountId) {
         return accountRepository.deleteAccount(accountId);
     }
+
+    @Override
+    public boolean checkAccountExists(String email, String username, Integer accountId) {
+        return accountRepository.checkAccountExists(email, username, accountId);
+    }
 }

@@ -34,4 +34,9 @@ public class PositionServiceImpl implements IPositionService {
     public boolean deletePosition(int id) {
         return positionRepository.deletePosition(id);
     }
+
+    @Override
+    public boolean checkExistPosition(String name, Integer id) {
+        return positionRepository.checkExistPosition(name, id);
+    }
 }

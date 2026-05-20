@@ -11,4 +11,5 @@ public interface IDepartmentRepository {
     boolean createDepartment(String departmentName);
     boolean deleteDepartment(int id);
     boolean updateDepartment(int id, String departmentName);
+    boolean checkExistDepartment(String departmentName, Integer departmentId);
 }

@@ -32,4 +32,8 @@ public class AccountController {
     public boolean deleteAccount(int accountId) {
         return accountService.deleteAccount(accountId);
     }
+
+    public boolean checkAccountExists(String email, String username, Integer accountId) {
+        return accountService.checkAccountExists(email, username, accountId);
+    }
 }

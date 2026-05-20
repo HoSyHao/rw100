@@ -10,4 +10,5 @@ public interface IPositionService {
     boolean createPosition(String name);
     boolean updatePosition(String name, int id);
     boolean deletePosition(int id);
+    boolean checkExistPosition(String name, Integer id);
 }
