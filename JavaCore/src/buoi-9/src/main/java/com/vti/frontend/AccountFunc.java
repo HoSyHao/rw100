@@ -4,20 +4,28 @@ import com.vti.backend.controller.AccountController;
 import com.vti.backend.controller.DepartmentController;
 import com.vti.backend.controller.PositionController;
 import com.vti.entity.Account;
+import com.vti.entity.Department;
+import com.vti.entity.Position;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 
-import static com.vti.utils.InputUtils.inputInt;
-import static com.vti.utils.InputUtils.inputOptionalInt;
+import static com.vti.utils.InputUtils.*;
 
 public class AccountFunc {
     private final Scanner sc = new Scanner(System.in);
     List<Account> accounts = new ArrayList<>();
+
+    List<Position> positions = new ArrayList<>();
+    List<Department> departments = new ArrayList<>();
     private final AccountController accountController = new AccountController();
     private final DepartmentController departmentController = new DepartmentController();
     private final PositionController positionController = new PositionController();
+    PositionFunc positionFunc = new PositionFunc();
+    DepartmentFunc departmentFunc = new DepartmentFunc();
+
     public void run() {
         while (true) {
             System.out.println("============ MỜI BẠN CHỌN CHỨC NĂNG =============");
@@ -74,7 +82,7 @@ public class AccountFunc {
     }
 
     public void showAccount(List<Account> accounts, String val1, String val2) {
-        if (accounts.isEmpty()) {
+        if (accounts.isEmpty() || accounts == null) {
             if (val1 == null && val2 == null) {
                 System.out.println("No accounts found");
             } else if (val2 == null) {
@@ -108,12 +116,7 @@ public class AccountFunc {
 
         // === Validate Email ===
         while (true) {
-            System.out.print("Nhập email (Hoặc nhấn Enter để hủy): ");
-            email = sc.nextLine().trim();
-            if (email.isBlank()) {
-                System.out.println("Đã hủy thao tác thêm mới.");
-                return;
-            }
+            email = inputString(sc, "Nhập email: ");
             if (!isValidEmail(email)) {
                 System.out.println("Email không đúng định dạng! Vui lòng nhập lại.");
                 continue;
@@ -127,12 +130,7 @@ public class AccountFunc {
 
         // === Validate Username ===
         while (true) {
-            System.out.print("Nhập username (Hoặc nhấn Enter để hủy): ");
-            username = sc.nextLine().trim();
-            if (username.isBlank()) {
-                System.out.println("Đã hủy thao tác thêm mới.");
-                return;
-            }
+            username = inputString(sc, "Nhập username: ");
             if (accountController.checkAccountExists(null, username, null)) {
                 System.out.println("Username '" + username + "' đã tồn tại! Vui lòng nhập username khác.");
                 continue;
@@ -140,20 +138,14 @@ public class AccountFunc {
             break;
         }
 
-        while (true) {
-            System.out.print("Nhập fullname: ");
-            fullname = sc.nextLine().trim();
-            if (fullname.isBlank()) {
-                System.out.println("Fullname không được để trống!");
-            } else {
-                break;
-            }
-        }
+        fullname = inputString(sc, "Nhập fullname: ");
 
 
         // Department ID (nếu nhập phải tồn tại)
         while (true) {
-            departmentId = inputOptionalInt(sc, "Nhập department id (Enter để bỏ qua): ");
+            departments = departmentController.getAllDepartments();
+            departmentFunc.showDepartment(departments,null,null);
+            departmentId = inputInt(sc, "Chọn department id (Enter để bỏ qua): ");
             if (departmentId == null) break;
 
             if (!departmentController.checkExistDepartment(null, departmentId)) {
@@ -165,7 +157,9 @@ public class AccountFunc {
 
         // Position ID (nếu nhập phải tồn tại)
         while (true) {
-            positionId = inputOptionalInt(sc, "Nhập position id (Enter để bỏ qua): ");
+            positions = positionController.getAllPositions();
+            positionFunc.showPosition(positions, null);
+            positionId = inputInt(sc, "Chọn position id (Enter để bỏ qua): ");
             if (positionId == null) break;
 
             if (!positionController.checkExistPosition(null, positionId)) {
@@ -191,7 +185,7 @@ public class AccountFunc {
 
         // Nhập và kiểm tra Account ID tồn tại
         while (true) {
-            accountId = inputOptionalInt(sc, "Nhập Account ID cần cập nhật (Enter để hủy): ");
+            accountId = inputInt(sc, "Nhập Account ID cần cập nhật (Enter để hủy): ");
             if (accountId == null) {
                 System.out.println("Đã hủy thao tác cập nhật.");
                 return;
@@ -203,74 +197,98 @@ public class AccountFunc {
             }
         }
 
-        // Email mới (nếu nhập phải đúng format và không trùng)
+        // Lấy thông tin hiện tại
+        Account existing = accountController.getAccountById(accountId);
+        System.out.println("\nThông tin hiện tại:");
+        System.out.println("Email: " + existing.getEmail());
+        System.out.println("Username: " + existing.getUsername());
+        System.out.println("Fullname: " + existing.getFullName());
+        System.out.println("Department: " + (existing.getDepartment() != null ? existing.getDepartment().getDepartmentName() : "NULL"));
+        System.out.println("Position: " + (existing.getPosition() != null ? existing.getPosition().getPositionName() : "NULL"));
+
+        // Email mới (Enter để giữ nguyên)
+        email = existing.getEmail();
         while (true) {
-            System.out.print("Nhập email mới (Enter để bỏ qua): ");
-            email = sc.nextLine().trim();
-            if (!email.isBlank()) {
-                if (!isValidEmail(email)) {
-                    System.out.println("Email không đúng định dạng!");
-                    continue;
-                }
-                if (accountController.checkAccountExists(email, null, accountId)) {
-                    System.out.println("Email đã tồn tại bởi tài khoản khác!");
-                }
-            } else {
+            String newEmail = inputStringBlank(sc, "Nhập email mới (Enter để giữ nguyên) [" + existing.getEmail() + "]: ");
+            if (newEmail == null) {
                 break;
             }
+            if (!isValidEmail(newEmail)) {
+                System.out.println("Email không đúng định dạng!");
+                continue;
+            }
+            if (accountController.checkAccountExists(newEmail, null, accountId)) {
+                System.out.println("Email đã tồn tại bởi tài khoản khác!");
+                continue;
+            }
+            email = newEmail;
+            break;
         }
 
-
-        // Username mới (nếu nhập phải không trùng)
+        // Username mới (Enter để giữ nguyên)
+        username = existing.getUsername();
         while (true) {
-            System.out.print("Nhập username mới (Enter để bỏ qua): ");
-            username = sc.nextLine().trim();
-            if (!username.isBlank()) {
-                if (accountController.checkAccountExists(null, username, accountId)) {
-                    System.out.println("Username đã tồn tại bởi tài khoản khác!");
-                }
-            } else  {
+            String newUsername = inputStringBlank(sc, "Nhập username mới (Enter để giữ nguyên) [" + existing.getUsername() + "]: ");
+            if (newUsername == null) {
                 break;
             }
+            if (accountController.checkAccountExists(null, newUsername, accountId)) {
+                System.out.println("Username đã tồn tại bởi tài khoản khác!");
+                continue;
+            }
+            username = newUsername;
+            break;
         }
 
-        while (true) {
-            System.out.print("Nhập fullname mới (Enter để bỏ qua): ");
-            fullname = sc.nextLine().trim();
-            if (fullname.isBlank()) {
-                break;
-            }
+        // Fullname mới (Enter để giữ nguyên)
+        fullname = existing.getFullName();
+        String newFullname = inputStringBlank(sc, "Nhập fullname mới (Enter để giữ nguyên) [" + existing.getFullName() + "]: ");
+        if (newFullname != null) {
+            fullname = newFullname;
         }
 
-
-        // Department ID mới
+        // Department ID mới (Enter để giữ nguyên)
+        departmentId = existing.getDepartment() != null ? existing.getDepartment().getDepartmentID() : null;
         while (true) {
-            departmentId = inputOptionalInt(sc, "Nhập department id mới (Enter để bỏ qua): ");
-            if (departmentId == null) break;
-
-            if (!departmentController.checkExistDepartment(null, departmentId)) {
-                System.out.println("Department ID " + departmentId + " không tồn tại! Vui lòng nhập lại.");
-            } else {
+            departments = departmentController.getAllDepartments();
+            departmentFunc.showDepartment(departments, null, null);
+            String prompt = "Chọn department id mới (Enter để giữ nguyên) [" + (existing.getDepartment() != null ? existing.getDepartment().getDepartmentID() : "NULL") + "]: ";
+            Integer newDept = inputInt(sc, prompt);
+            if (newDept == null) {
                 break;
             }
+
+            if (!departmentController.checkExistDepartment(null, newDept)) {
+                System.out.println("Department ID " + newDept + " không tồn tại! Vui lòng nhập lại.");
+                continue;
+            }
+            departmentId = newDept;
+            break;
         }
 
-        // Position ID mới
+        // Position ID mới (Enter để giữ nguyên)
+        positionId = existing.getPosition() != null ? existing.getPosition().getPositionID() : null;
         while (true) {
-            positionId = inputOptionalInt(sc, "Nhập position id mới (Enter để bỏ qua): ");
-            if (positionId == null) break;
-
-            if (!positionController.checkExistPosition(null, positionId)) {
-                System.out.println("Position ID " + positionId + " không tồn tại! Vui lòng nhập lại.");
-            } else {
+            positions = positionController.getAllPositions();
+            positionFunc.showPosition(positions, null);
+            String prompt = "Chọn position id mới (Enter để giữ nguyên) [" + (existing.getPosition() != null ? existing.getPosition().getPositionID() : "NULL") + "]: ";
+            Integer newPos = inputInt(sc, prompt);
+            if (newPos == null) {
                 break;
             }
+
+            if (!positionController.checkExistPosition(null, newPos)) {
+                System.out.println("Position ID " + newPos + " không tồn tại! Vui lòng nhập lại.");
+                continue;
+            }
+            positionId = newPos;
+            break;
         }
 
         boolean isUpdated = accountController.updateAccount(
-                email.isBlank() ? null : email,
-                username.isBlank() ? null : username,
-                fullname.isBlank() ? null : fullname,
+                email,
+                username,
+                fullname,
                 departmentId,
                 positionId,
                 accountId
@@ -287,7 +305,7 @@ public class AccountFunc {
         Integer accountId;
 
         while (true) {
-            accountId = inputOptionalInt(sc, "Nhập Account ID cần xóa (Enter để hủy): ");
+            accountId = inputInt(sc, "Nhập Account ID cần xóa (Enter để hủy): ");
 
             if (accountId == null) {
                 System.out.println("Đã hủy thao tác xóa.");
@@ -311,8 +329,8 @@ public class AccountFunc {
     }
 
     public void findByFullname() {
-        System.out.print("Nhập fullname cần tìm: ");
-        String fullname = sc.nextLine();
+        String fullname = inputStringBlank(sc, "Nhập fullname cần tìm: ");
+        if (Objects.isNull(fullname)) return;
 
         List<Account> accounts = accountController.findByFullname(fullname);
 
@@ -320,11 +338,11 @@ public class AccountFunc {
     }
 
     public void findByFullnameAndUsername() {
-        System.out.print("Nhập fullname cần tìm: ");
-        String fullname = sc.nextLine();
+        String fullname = inputStringBlank(sc, "Nhập fullname cần tìm: ");
+        if (Objects.isNull(fullname)) return;
 
-        System.out.print("Nhập username cần tìm: ");
-        String username = sc.nextLine();
+        String username = inputStringBlank(sc, "Nhập username cần tìm: ");
+        if (Objects.isNull(username)) return;
 
         List<Account> accounts =
                 accountController.findByFullnameAndUsername(fullname, username);

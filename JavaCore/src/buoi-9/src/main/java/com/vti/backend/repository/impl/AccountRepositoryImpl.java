@@ -17,7 +17,7 @@ public class AccountRepositoryImpl implements IAccountRepository {
     @Override
     public List<Account> getAllAccounts() {
         List<Account> accounts = new ArrayList<>();
-        String query = "select * from `account` a\n" +
+        String query = "select a.*, d.department_name, p.position_name from `account` a\n" +
                 "left join `department` d ON d.department_id = a.department_id\n" +
                 "left join `position` p ON p.position_id = a.position_id";
 
@@ -46,8 +46,14 @@ public class AccountRepositoryImpl implements IAccountRepository {
                     }
                     if (positionId != null) {
                         String positionNameStr = rs.getString("position_name");
-                        PositionName positionName = PositionName.valueOf(positionNameStr);
-                        position = new Position(positionId, positionName);
+                        if (positionNameStr != null) {
+                            try {
+                                PositionName positionName = PositionName.valueOf(positionNameStr);
+                                position = new Position(positionId, positionName);
+                            } catch (IllegalArgumentException ignored) {
+                                // nếu value không khớp enum thì bỏ qua (hoặc log)
+                            }
+                        }
                     }
                     Account account = new Account(id, email, username, fullname, department, position, createDate);
                     accounts.add(account);
@@ -63,7 +69,7 @@ public class AccountRepositoryImpl implements IAccountRepository {
     @Override
     public List<Account> findByFullname(String fullname) {
         ArrayList<Account> accounts = new ArrayList<>();
-        String query = "select * from `account` a\n" +
+        String query = "select a.*, d.department_name, p.position_name from `account` a\n" +
                 "left join `department` d ON d.department_id = a.department_id\n" +
                 "left join `position` p ON p.position_id = a.position_id\n" +
                 "where lower(a.full_name) like lower(?)";
@@ -94,8 +100,13 @@ public class AccountRepositoryImpl implements IAccountRepository {
                     }
                     if (positionId != null) {
                         String positionNameStr = rs.getString("position_name");
-                        PositionName positionName = PositionName.valueOf(positionNameStr);
-                        position = new Position(positionId, positionName);
+                        if (positionNameStr != null) {
+                            try {
+                                PositionName positionName = PositionName.valueOf(positionNameStr);
+                                position = new Position(positionId, positionName);
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
                     }
                     Account account = new Account(id, email, username, full_name, department, position, createDate);
                     accounts.add(account);
@@ -112,7 +123,7 @@ public class AccountRepositoryImpl implements IAccountRepository {
     @Override
     public List<Account> findByFullnameAndUsername(String val_ful, String val_user) {
         ArrayList<Account> accounts = new ArrayList<>();
-        String query = "select * from `account` a\n" +
+        String query = "select a.*, d.department_name, p.position_name from `account` a\n" +
                 "left join `department` d ON d.department_id = a.department_id\n" +
                 "left join `position` p ON p.position_id = a.position_id\n" +
                 "where lower(full_name) like lower(?) \n" +
@@ -145,8 +156,13 @@ public class AccountRepositoryImpl implements IAccountRepository {
                     }
                     if (positionId != null) {
                         String positionNameStr = rs.getString("position_name");
-                        PositionName positionName = PositionName.valueOf(positionNameStr);
-                        position = new Position(positionId, positionName);
+                        if (positionNameStr != null) {
+                            try {
+                                PositionName positionName = PositionName.valueOf(positionNameStr);
+                                position = new Position(positionId, positionName);
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
                     }
                     Account account = new Account(id, email, username, fullname, department, position, createDate);
                     accounts.add(account);
@@ -290,6 +306,62 @@ public class AccountRepositoryImpl implements IAccountRepository {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public Account getAccountById(int accountId) {
+        String query = "SELECT a.*, d.department_name, p.position_name " +
+                "FROM account a " +
+                "LEFT JOIN department d ON a.department_id = d.department_id " +
+                "LEFT JOIN position p ON a.position_id = p.position_id " +
+                "WHERE a.account_id = ?";
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query);
+        ) {
+            stmt.setObject(1, accountId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    int id = rs.getInt("account_id");
+                    String email = rs.getString("email");
+                    String username = rs.getString("username");
+                    String fullname = rs.getString("full_name");
+
+                    Integer departmentId = rs.getObject("department_id", Integer.class);
+                    Integer positionId = rs.getObject("position_id", Integer.class);
+
+                    LocalDateTime createDate = null;
+                    java.sql.Timestamp ts = rs.getTimestamp("create_date");
+                    if (ts != null) {
+                        createDate = ts.toLocalDateTime();
+                    }
+
+                    Position position = null;
+                    Department department = null;
+
+                    //Kiem tra chua co id thi khong tao pos va dept
+                    if (departmentId != null) {
+                        String departmentName = rs.getString("department_name");
+                        department = new Department(departmentId, departmentName);
+                    }
+                    if (positionId != null) {
+                        String positionNameStr = rs.getString("position_name");
+                        if (positionNameStr != null) {
+                            try {
+                                PositionName positionName = PositionName.valueOf(positionNameStr);
+                                position = new Position(positionId, positionName);
+                            } catch (IllegalArgumentException ignored) {
+                            }
+                        }
+                    }
+                    return new Account(id, email, username, fullname, department, position, createDate);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
 }

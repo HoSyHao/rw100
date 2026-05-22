@@ -7,8 +7,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
 
-import static com.vti.utils.InputUtils.inputInt;
-import static com.vti.utils.InputUtils.inputOptionalInt;
+import static com.vti.utils.InputUtils.*;
 
 public class DepartmentFunc {
     private final Scanner sc = new Scanner(System.in);
@@ -82,9 +81,8 @@ public class DepartmentFunc {
     public void createDepartment() {
         String name;
         while (true) {
-            System.out.print("Nhập tên phòng ban (Hoặc nhấn Enter để hủy): ");
-            name = sc.nextLine();
-            if (name.isBlank()) {
+            name = inputStringBlank(sc,"Nhập tên phòng ban (Enter để hủy): ");
+            if (Objects.isNull(name)) {
                 System.out.println("Đã hủy thao tác thêm mới.");
                 return;
             }
@@ -106,7 +104,7 @@ public class DepartmentFunc {
     public void deleteDepartment() {
         Integer id;
         while (true) {
-            id = inputOptionalInt(sc, "Nhập ID cần xóa (Hoặc nhấn Enter để hủy): ");
+            id = inputInt(sc, "Nhập ID cần xóa (Enter để hủy): ");
 
             if (id == null) {
                 System.out.println("Đã hủy thao tác xóa.");
@@ -130,8 +128,13 @@ public class DepartmentFunc {
     public void updateDepartment() {
         Integer id;
         String name;
+        
+        // Hiển thị danh sách department để user tham khảo
+        departments = departmentController.getAllDepartments();
+        this.showDepartment(departments, null, null);
+        
         while (true) {
-            id = inputOptionalInt(sc, "Nhập ID cần cập nhật (Hoặc nhấn Enter để hủy): ");
+            id = inputInt(sc, "Nhập ID cần cập nhật (Enter để hủy): ");
 
             if (id == null) {
                 System.out.println("Đã hủy thao tác cập nhật.");
@@ -145,13 +148,14 @@ public class DepartmentFunc {
             }
         }
 
+        // Nhập tên mới (Enter = hủy, không cập nhật)
         while (true) {
-            System.out.print("Nhập tên muốn cập nhật (Hoặc nhấn Enter để hủy): ");
-            name = sc.nextLine();
-            if (name.isBlank()) {
+            name = inputStringBlank(sc, "Nhập tên muốn cập nhật (Enter để hủy): ");
+            if (name == null) {
                 System.out.println("Đã hủy thao tác cập nhật.");
                 return;
             }
+            // Kiểm tra trùng lặp (tên không được trùng với department khác)
             if (departmentController.checkExistDepartment(name.trim(), id)) {
                 System.out.println("Tên '" + name.trim() + "' đã tồn tại! Vui lòng nhập tên khác.");
             } else {
@@ -168,9 +172,11 @@ public class DepartmentFunc {
     }
 
     public void findDepartmentByIdAndName() {
-        int id = inputInt(sc, "Nhập id: ");
+        Integer id = inputInt(sc, "Nhập id (Enter để hủy): ");
+        if (id == null) return;
         System.out.print("Nhập tên phòng ban cần tìm: ");
-        String name = sc.nextLine();
+        String name = inputStringBlank(sc, "Nhập tên phòng ban cần tìm (Enter để hủy): ");
+        if (name == null) return;
         List<Department> departments = departmentController.findDepartmentByIdAndName(name, id);
         this.showDepartment(departments, name, id);
     }

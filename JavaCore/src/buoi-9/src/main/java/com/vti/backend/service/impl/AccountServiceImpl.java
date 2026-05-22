@@ -43,4 +43,9 @@ public class AccountServiceImpl implements IAccountService {
     public boolean checkAccountExists(String email, String username, Integer accountId) {
         return accountRepository.checkAccountExists(email, username, accountId);
     }
+
+    @Override
+    public com.vti.entity.Account getAccountById(int accountId) {
+        return accountRepository.getAccountById(accountId);
+    }
 }

@@ -10,18 +10,6 @@ public class InputUtils {
         while (true) {
             System.out.print(message);
             String input = sc.nextLine();
-            try {
-                return Integer.parseInt(input.trim());
-            } catch (NumberFormatException e) {
-                System.out.println("Lỗi: Vui lòng nhập vào một số nguyên hợp lệ!");
-            }
-        }
-    }
-
-    public static Integer inputOptionalInt(Scanner sc, String message) {
-        while (true) {
-            System.out.print(message);
-            String input = sc.nextLine();
 
             if (input == null ||input.isBlank()) {
                 return null;
@@ -33,6 +21,28 @@ public class InputUtils {
                 System.out.println("Lỗi: Vui lòng nhập vào một số nguyên hoặc để trống!");
             }
         }
+    }
+
+    public static String inputString(Scanner sc, String message){
+        while (true) {
+            System.out.print(message);
+            String input = sc.nextLine();
+
+            // Nếu không trống, trả về
+            if (!input.isBlank()) {
+                return input.trim();
+            }
+
+            // Nếu trống, yêu cầu nhập lại
+            System.out.println("Vui lòng nhập dữ liệu!");
+        }
+    }
+
+    public static String inputStringBlank(Scanner sc, String message){
+        System.out.print(message);
+        String input = sc.nextLine();
+
+        return input.isBlank() ? null : input.trim();
     }
 
     public static PositionName inputPositionName(Scanner sc) {

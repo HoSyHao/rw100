@@ -12,4 +12,5 @@ public interface IAccountService {
     boolean updateAccount(String email, String username, String fullname, Integer departmentId, Integer positionId, int accountId);
     boolean deleteAccount(int accountId);
     boolean checkAccountExists(String email, String username, Integer accountId);
+    Account getAccountById(int accountId);
 }

@@ -36,4 +36,8 @@ public class AccountController {
     public boolean checkAccountExists(String email, String username, Integer accountId) {
         return accountService.checkAccountExists(email, username, accountId);
     }
+
+    public com.vti.entity.Account getAccountById(int accountId) {
+        return accountService.getAccountById(accountId);
+    }
 }
