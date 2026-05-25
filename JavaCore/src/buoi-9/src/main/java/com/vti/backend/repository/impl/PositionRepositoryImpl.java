@@ -1,6 +1,5 @@
 package com.vti.backend.repository.impl;
 
-import com.vti.backend.repository.IAccountRepository;
 import com.vti.backend.repository.IPositionRepository;
 import com.vti.entity.Position;
 import com.vti.enums.PositionName;
@@ -140,5 +139,33 @@ public class PositionRepositoryImpl implements IPositionRepository {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public List<Integer> findExistingIds(List<Integer> ids) {
+        List<Integer> existingIds = new ArrayList<>();
+        if (ids == null || ids.isEmpty()) return existingIds;
+
+        StringBuilder query = new StringBuilder("SELECT position_id FROM position WHERE position_id IN (");
+        for (int i = 0; i < ids.size(); i++) {
+            query.append("?");
+            if (i < ids.size() - 1) query.append(",");
+        }
+        query.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+            for (int i = 0; i < ids.size(); i++) {
+                stmt.setInt(i + 1, ids.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    existingIds.add(rs.getInt("position_id"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return existingIds;
     }
 }

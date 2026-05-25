@@ -10,6 +10,9 @@ public class Department {
         this.departmentID = departmentID;
     }
 
+    public Department(String departmentName) {
+        this.departmentName = departmentName;
+    }
 
     public String getDepartmentName() {
         return departmentName;

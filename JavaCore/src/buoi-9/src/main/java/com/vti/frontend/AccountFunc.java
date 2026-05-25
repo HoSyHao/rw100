@@ -35,6 +35,7 @@ public class AccountFunc {
             System.out.println("4. Xóa account");
             System.out.println("5. Tìm account theo fullname");
             System.out.println("6. Tìm account theo fullname + username");
+            System.out.println("7. Import account bằng csv");
             System.out.println("0. Thoát");
 
             String choice = sc.nextLine();
@@ -68,6 +69,11 @@ public class AccountFunc {
 
                 case "6":
                     this.findByFullnameAndUsername();
+                    System.out.println();
+                    break;
+
+                case "7":
+                    this.importAccountCSV();
                     System.out.println();
                     break;
 
@@ -350,9 +356,11 @@ public class AccountFunc {
         this.showAccount(accounts, fullname, username);
     }
 
-    private boolean isValidEmail(String email) {
-        if (email == null) return false;
-        String emailRegex = "^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$";
-        return email.matches(emailRegex);
+    public void importAccountCSV() {
+        System.out.println("=== Import Account ===");
+        System.out.print("Mời bạn nhập đường dẫn: ");
+        String pathName = sc.nextLine();
+        String res = accountController.importAccountCSV(pathName);
+        System.out.println(res);
     }
 }

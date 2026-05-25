@@ -2,6 +2,7 @@ package com.vti.backend.repository.impl;
 
 import com.vti.backend.repository.IDepartmentRepository;
 import com.vti.entity.Department;
+import com.vti.utils.JDBCUtils;
 
 import java.lang.reflect.Type;
 import java.sql.*;
@@ -168,6 +169,98 @@ public class DepartmentRepositoryImpl implements IDepartmentRepository {
             e.printStackTrace();
         }
         return false;
+    }
+
+    @Override
+    public boolean createDepartments(List<Department> departments) {
+        String insert = "insert into `department` (department_name) values (?);";
+        Connection conn = null;
+        try {
+            conn = JDBCUtils.getConnection();
+            // 1. Tắt chế độ tự động commit để bắt đầu Transaction
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmt = conn.prepareStatement(insert)) {
+                for (Department dep : departments) {
+                    stmt.setString(1, dep.getDepartmentName());
+                    stmt.addBatch();
+                }
+                // 2. Thực thi batch
+                stmt.executeBatch();
+
+                // 3. Commit tất cả nếu không có lỗi
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                // 4. Nếu có bất kỳ lỗi nào, rollback (hủy bỏ) toàn bộ
+                if (conn != null) conn.rollback();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            // Luôn bật lại autoCommit hoặc đóng connection
+            try { if (conn != null) conn.close(); } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    @Override
+    public List<String> findExistingNames(List<String> names) {
+        List<String> existingNames = new ArrayList<>();
+        if (names == null || names.isEmpty()) return existingNames;
+
+        StringBuilder query = new StringBuilder("SELECT department_name FROM department WHERE department_name IN (");
+        for (int i = 0; i < names.size(); i++) {
+            query.append("?");
+            if (i < names.size() - 1) query.append(",");
+        }
+        query.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+
+            for (int i = 0; i < names.size(); i++) {
+                stmt.setString(i + 1, names.get(i));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    existingNames.add(rs.getString("department_name"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return existingNames;
+    }
+
+    @Override
+    public List<Integer> findExistingIds(List<Integer> ids) {
+        List<Integer> existingIds = new ArrayList<>();
+        if (ids == null || ids.isEmpty()) return existingIds;
+
+        StringBuilder query = new StringBuilder("SELECT department_id FROM department WHERE department_id IN (");
+        for (int i = 0; i < ids.size(); i++) {
+            query.append("?");
+            if (i < ids.size() - 1) query.append(",");
+        }
+        query.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+            for (int i = 0; i < ids.size(); i++) {
+                stmt.setInt(i + 1, ids.get(i));
+            }
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    existingIds.add(rs.getInt("department_id"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return existingIds;
     }
 
 }

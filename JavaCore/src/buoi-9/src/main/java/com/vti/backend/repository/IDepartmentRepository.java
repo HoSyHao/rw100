@@ -12,4 +12,7 @@ public interface IDepartmentRepository {
     boolean deleteDepartment(int id);
     boolean updateDepartment(int id, String departmentName);
     boolean checkExistDepartment(String departmentName, Integer departmentId);
+    boolean createDepartments(List<Department> departments);
+    List<String> findExistingNames(List<String> names);
+    List<Integer> findExistingIds(List<Integer> ids);
 }

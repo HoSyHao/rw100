@@ -23,6 +23,7 @@ public class DepartmentFunc {
             System.out.println("4. Xóa phòng ban");
             System.out.println("5. Tìm kiếm phòng theo id và name");
             System.out.println("6. Tìm kiếm phòng ban có nhiều hơn 2 nhân viên");
+            System.out.println("7. Import phòng ban bằng csv");
             System.out.println("0. Thoát");
 
             String choice = sc.nextLine();
@@ -50,7 +51,10 @@ public class DepartmentFunc {
                     break;
                 case "6":
                     departments = departmentController.findDepartmentHaveMoreThan2Acc();
-                    showDepartment(departments, null, null);
+                    this.showDepartment(departments, null, null);
+                    break;
+                case "7":
+                    this.importDepartmentCSV();
                     break;
                 case "0":
                     System.out.println("===========Đã thoát chương trình========");
@@ -179,5 +183,13 @@ public class DepartmentFunc {
         if (name == null) return;
         List<Department> departments = departmentController.findDepartmentByIdAndName(name, id);
         this.showDepartment(departments, name, id);
+    }
+
+    public void importDepartmentCSV() {
+        System.out.println("=== Import Department ===");
+        System.out.print("Mời bạn nhập đường dẫn: ");
+        String pathName = sc.nextLine();
+        String res = departmentController.importDepartmentCSV(pathName);
+        System.out.println(res);
     }
 }

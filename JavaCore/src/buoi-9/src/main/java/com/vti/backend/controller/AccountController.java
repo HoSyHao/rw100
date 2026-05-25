@@ -40,4 +40,8 @@ public class AccountController {
     public com.vti.entity.Account getAccountById(int accountId) {
         return accountService.getAccountById(accountId);
     }
+
+    public String importAccountCSV(String pathName) {
+        return accountService.importAccountCSV(pathName);
+    }
 }

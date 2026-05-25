@@ -364,4 +364,107 @@ public class AccountRepositoryImpl implements IAccountRepository {
         return null;
     }
 
+    @Override
+    public List<String> findExistingEmails(List<String> emails) {
+        List<String> existingEmails = new ArrayList<>();
+        if (emails == null || emails.isEmpty()) return existingEmails;
+
+        StringBuilder query = new StringBuilder("SELECT email FROM account WHERE email IN (");
+        for (int i = 0; i < emails.size(); i++) {
+            query.append("?");
+            if (i < emails.size() - 1) query.append(",");
+        }
+        query.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+
+            for (int i = 0; i < emails.size(); i++) {
+                stmt.setString(i + 1, emails.get(i));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    existingEmails.add(rs.getString("email"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return existingEmails;
+    }
+
+    @Override
+    public List<String> findExistingUsernames(List<String> usernames) {
+        List<String> existingUsernames = new ArrayList<>();
+        if (usernames == null || usernames.isEmpty()) return existingUsernames;
+
+        StringBuilder query = new StringBuilder("SELECT username FROM account WHERE username IN (");
+        for (int i = 0; i < usernames.size(); i++) {
+            query.append("?");
+            if (i < usernames.size() - 1) query.append(",");
+        }
+        query.append(")");
+
+        try (Connection conn = getConnection();
+             PreparedStatement stmt = conn.prepareStatement(query.toString())) {
+
+            for (int i = 0; i < usernames.size(); i++) {
+                stmt.setString(i + 1, usernames.get(i));
+            }
+
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    existingUsernames.add(rs.getString("username"));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return existingUsernames;
+    }
+
+    @Override
+    public boolean createAccountsBatch(List<Account> accounts) {
+        String insert = "INSERT INTO account (email, username, full_name, department_id, position_id) VALUES (?, ?, ?, ?, ?)";
+        Connection conn = null;
+        try {
+            conn = getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmt = conn.prepareStatement(insert)) {
+                for (Account acc : accounts) {
+                    stmt.setString(1, acc.getEmail());
+                    stmt.setString(2, acc.getUsername());
+                    stmt.setString(3, acc.getFullName());
+
+                    if (acc.getDepartment() != null && acc.getDepartment().getDepartmentID() > 0) {
+                        stmt.setInt(4, acc.getDepartment().getDepartmentID());
+                    } else {
+                        stmt.setNull(4, java.sql.Types.INTEGER);
+                    }
+
+                    if (acc.getPosition() != null && acc.getPosition().getPositionID() > 0) {
+                        stmt.setInt(5, acc.getPosition().getPositionID());
+                    } else {
+                        stmt.setNull(5, java.sql.Types.INTEGER);
+                    }
+
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+                conn.commit();
+                return true;
+            } catch (Exception e) {
+                if (conn != null) conn.rollback();
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try { if (conn != null) conn.close(); } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
 }

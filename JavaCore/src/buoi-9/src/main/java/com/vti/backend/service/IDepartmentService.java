@@ -12,4 +12,5 @@ public interface IDepartmentService {
     boolean deleteDepartment(int id);
     boolean updateDepartment(int id, String departmentName);
     boolean checkExistDepartment(String departmentName, Integer departmentId);
+    String importDepartmentCSV(String pathName);
 }

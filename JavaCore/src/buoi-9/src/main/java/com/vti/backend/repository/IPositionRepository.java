@@ -2,6 +2,7 @@ package com.vti.backend.repository;
 
 import com.vti.entity.Position;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public interface IPositionRepository {
@@ -11,4 +12,5 @@ public interface IPositionRepository {
     boolean updatePosition(String name, int id);
     boolean deletePosition(int id);
     boolean checkExistPosition(String name, Integer id);
+    List<Integer> findExistingIds(List<Integer> ids);
 }

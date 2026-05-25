@@ -14,4 +14,7 @@ public interface IAccountRepository {
     boolean deleteAccount(int accountId);
     boolean checkAccountExists(String email, String username, Integer accountId);
     Account getAccountById(int accountId);
+    List<String> findExistingEmails(List<String> emails);
+    List<String> findExistingUsernames(List<String> usernames);
+    boolean createAccountsBatch(List<Account> accounts);
 }

@@ -13,4 +13,5 @@ public interface IAccountService {
     boolean deleteAccount(int accountId);
     boolean checkAccountExists(String email, String username, Integer accountId);
     Account getAccountById(int accountId);
+    String importAccountCSV(String pathName);
 }

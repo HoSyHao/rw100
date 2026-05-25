@@ -6,6 +6,12 @@ import java.util.Scanner;
 
 public class InputUtils {
 
+    public static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@([A-Za-z0-9.-]+\\.[A-Za-z]{2,})$";
+
+    public static boolean isValidEmail(String email) {
+        return email != null && email.matches(EMAIL_REGEX);
+    }
+
     public static Integer inputInt(Scanner sc, String message) {
         while (true) {
             System.out.print(message);
