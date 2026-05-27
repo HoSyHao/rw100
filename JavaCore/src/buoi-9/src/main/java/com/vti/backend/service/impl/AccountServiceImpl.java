@@ -12,8 +12,10 @@ import com.vti.entity.Department;
 import com.vti.entity.Position;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.util.*;
+import com.vti.dto.ImportError;
 
 import static com.vti.utils.InputUtils.isValidEmail;
 
@@ -62,112 +64,101 @@ public class AccountServiceImpl implements IAccountService {
 
     @Override
     public String importAccountCSV(String pathName) {
+        // Kiểm tra file có tồn tại
+        File file = new File(pathName);
+        if (!file.exists()) {
+            return "File không tồn tại.";
+        }
+
+        // Kiểm tra phần mở rộng định dạng file có phải là .csv
         if (pathName == null || !pathName.endsWith(".csv")) {
             return "Lỗi: Định dạng file không đúng!";
         }
 
         List<Account> allRowsInFile = new ArrayList<>();
         List<String> errorMessages = new ArrayList<>();
+        List<ImportError> importErrors = new ArrayList<>();
+        Map<Account, List<String>> accountRawFieldsMap = new IdentityHashMap<>();
         
-        // Map để đếm số lần xuất hiện trong file
+        // Map để đếm tần suất xuất hiện của email và username trong file CSV
         Map<String, Integer> emailFrequencyMap = new HashMap<>();
         Map<String, Integer> usernameFrequencyMap = new HashMap<>();
 
-        // PHASE 1.1: Đọc file, validate format và đếm tần suất
+        String headerLine = "";
+
+        // Các biến đếm số lượng để hiển thị báo cáo tổng kết
+        int totalInputLines = 0;
+        int parseErrorCount = 0;   // Lỗi định dạng dòng / validation
+        int internalDupCount = 0; // Lỗi trùng lặp trong file CSV
+        int dbErrorCount = 0;       // Lỗi do trùng lặp Database hoặc khóa ngoại không tồn tại
+
+        // PHASE 1.1: Đọc file CSV, validate format từng dòng & đếm tần suất xuất hiện
         try (BufferedReader br = new BufferedReader(new FileReader(pathName))) {
-            String line = br.readLine(); // Header
+            headerLine = br.readLine(); // Đọc dòng Header
+            String line;
             int lineNum = 1;
 
             while ((line = br.readLine()) != null) {
                 lineNum++;
-                if (line.trim().isEmpty()) continue;
+                if (line.trim().isEmpty()) continue; // Bỏ qua dòng trống
+                totalInputLines++;
                 String[] fields = line.split(",", -1);
 
-                if (fields.length < 3) {
-                    errorMessages.add("Dòng " + lineNum + ": Thiếu cột dữ liệu cơ bản.");
-                    continue;
+                // Thực hiện validate định dạng dòng
+                Account acc = this.validateAccountRow(fields, lineNum, errorMessages, importErrors);
+                if (acc == null) {
+                    parseErrorCount++;
+                    continue; // Dòng bị lỗi định dạng, bỏ qua và chuyển dòng tiếp theo
                 }
 
-                String email = fields[0].trim();
-                String fullname = fields[1].trim();
-                String username = fields[2].trim();
-
-                // Check Not Null & Format
-                List<String> rowFormatErrors = new ArrayList<>();
-                if (email.isEmpty()) rowFormatErrors.add("Thiếu Email");
-                if (fullname.isEmpty()) rowFormatErrors.add("Thiếu Fullname");
-                if (username.isEmpty()) rowFormatErrors.add("Thiếu Username");
-
-                if (!rowFormatErrors.isEmpty()) {
-                    errorMessages.add("Dòng " + lineNum + ": " + String.join(", ", rowFormatErrors) + ".");
-                    continue;
-                }
-
-                if (!isValidEmail(email)) {
-                    errorMessages.add("Dòng " + lineNum + ": Định dạng Email '" + email + "' không hợp lệ.");
-                    continue;
-                }
-
-                // Parse Foreign Keys
-                Department dep = null;
-                Position pos = null;
-                try {
-                    if (fields.length >= 4 && !fields[3].trim().isEmpty()) {
-                        int depId = Integer.parseInt(fields[3].trim());
-                        dep = new Department(); dep.setDepartmentID(depId);
-                    }
-                    if (fields.length >= 5 && !fields[4].trim().isEmpty()) {
-                        int posId = Integer.parseInt(fields[4].trim());
-                        pos = new Position(); pos.setPositionID(posId);
-                    }
-                } catch (NumberFormatException e) {
-                    errorMessages.add("Dòng " + lineNum + ": ID phòng ban hoặc chức vụ phải là số nguyên.");
-                    continue;
-                }
-
-                Account acc = new Account(0, email, username, fullname, dep, pos, null);
                 allRowsInFile.add(acc);
+                // Map Account và CSV
+                accountRawFieldsMap.put(acc, Arrays.asList(fields));
 
-                // Đếm tần suất
-                emailFrequencyMap.put(email, emailFrequencyMap.getOrDefault(email, 0) + 1);
-                usernameFrequencyMap.put(username, usernameFrequencyMap.getOrDefault(username, 0) + 1);
+                // Đếm tần suất xuất hiện để check trùng lặp
+                emailFrequencyMap.put(acc.getEmail(), emailFrequencyMap.getOrDefault(acc.getEmail(), 0) + 1);
+                usernameFrequencyMap.put(acc.getUsername(), usernameFrequencyMap.getOrDefault(acc.getUsername(), 0) + 1);
             }
         } catch (Exception e) {
             return "Lỗi đọc file: " + e.getMessage();
         }
 
+        // Tạo dòng Header cho file báo cáo lỗi thêm cột error_message ở cuối
+        String errorHeader = (headerLine != null ? headerLine.trim() : "email,full_name,username,department_id,position_id") + ",error_message";
+
+        // Nếu file không chứa dòng nào hợp lệ, ghi file lỗi và trả về thông báo
         if (allRowsInFile.isEmpty()) {
-            return reportErrors("Cảnh báo: Không có dữ liệu hợp lệ để xử lý.", errorMessages);
+            ImportError.writeErrorsToCSV(pathName, errorHeader, importErrors);
+            int successCount = 0;
+            int skippedCount = parseErrorCount;
+            int failedCount = 0;
+            return "Kết quả Import Account: Tổng=" + totalInputLines + ", Thành công=" + successCount + ", Bỏ (validate)=" + skippedCount + ", Lỗi DB=" + failedCount + ". Chi tiết lỗi đã ghi vào file.";
         }
 
-        // PHASE 1.2: Lọc trùng nội bộ
-        List<Account> filteredAccounts = new ArrayList<>();
+        // PHASE 1.2: Lọc trùng lặp trong file CSV
+        List<Account> filteredAccounts = this.filterInternalDuplicates(
+                allRowsInFile, emailFrequencyMap, usernameFrequencyMap, errorMessages, importErrors, accountRawFieldsMap
+        );
+        internalDupCount = allRowsInFile.size() - filteredAccounts.size();
+
+        // Nếu tất cả record đều bị trùng lặp, ghi file báo cáo lỗi và kết thúc
+        if (filteredAccounts.isEmpty()) {
+            ImportError.writeErrorsToCSV(pathName, errorHeader, importErrors);
+            int successCount = 0;
+            int skippedCount = parseErrorCount + internalDupCount;
+            int failedCount = 0;
+            return "Kết quả Import Account: Tổng=" + totalInputLines + ", Thành công=" + successCount + ", Bỏ (validate)=" + skippedCount + ", Lỗi DB=" + failedCount + ". Chi tiết lỗi đã ghi vào file.";
+        }
+
+        // Gom danh sách các ID phòng ban và chức vụ cần kiểm tra tồn tại dưới Database
         Set<Integer> depIdsToCheck = new HashSet<>();
         Set<Integer> posIdsToCheck = new HashSet<>();
-
-        for (Account acc : allRowsInFile) {
-            List<String> internalDupErrors = new ArrayList<>();
-            if (emailFrequencyMap.get(acc.getEmail()) > 1) {
-                internalDupErrors.add("Email lặp lại trong file");
-            }
-            if (usernameFrequencyMap.get(acc.getUsername()) > 1) {
-                internalDupErrors.add("Username lặp lại trong file");
-            }
-
-            if (internalDupErrors.isEmpty()) {
-                filteredAccounts.add(acc);
-                if (acc.getDepartment() != null) depIdsToCheck.add(acc.getDepartment().getDepartmentID());
-                if (acc.getPosition() != null) posIdsToCheck.add(acc.getPosition().getPositionID());
-            } else {
-                errorMessages.add("Tài khoản '" + acc.getEmail() + "': " + String.join(", ", internalDupErrors) + ".");
-            }
+        for (Account acc : filteredAccounts) {
+            if (acc.getDepartment() != null) depIdsToCheck.add(acc.getDepartment().getDepartmentID());
+            if (acc.getPosition() != null) posIdsToCheck.add(acc.getPosition().getPositionID());
         }
 
-        if (filteredAccounts.isEmpty()) {
-            return reportErrors("Cảnh báo: Tất cả dữ liệu đều bị trùng lặp nội bộ.", errorMessages);
-        }
-
-        // PHASE 2: Check Database
+        // PHASE 2: Truy vấn một lần từ Database và kiểm tra trùng lặp DB / Khóa ngoại không tồn tại
         IDepartmentRepository depRepo = new DepartmentRepositoryImpl();
         IPositionRepository posRepo = new PositionRepositoryImpl();
 
@@ -176,54 +167,175 @@ public class AccountServiceImpl implements IAccountService {
         List<Integer> existingDepIds = depRepo.findExistingIds(new ArrayList<>(depIdsToCheck));
         List<Integer> existingPosIds = posRepo.findExistingIds(new ArrayList<>(posIdsToCheck));
 
-        List<Account> finalAccountsToInsert = new ArrayList<>();
-        for (Account acc : filteredAccounts) {
-            List<String> dbErrors = new ArrayList<>();
-            
-            if (existingEmails.contains(acc.getEmail())) dbErrors.add("Email đã tồn tại");
-            if (existingUsernames.contains(acc.getUsername())) dbErrors.add("Username đã tồn tại");
-            
-            if (acc.getDepartment() != null && !existingDepIds.contains(acc.getDepartment().getDepartmentID())) {
-                dbErrors.add("DepartmentID " + acc.getDepartment().getDepartmentID() + " không tồn tại");
-            }
-            if (acc.getPosition() != null && !existingPosIds.contains(acc.getPosition().getPositionID())) {
-                dbErrors.add("PositionID " + acc.getPosition().getPositionID() + " không tồn tại");
-            }
+        // Kiểm tra bản ghi hợp lệ với DB
+        List<Account> finalAccountsToInsert = this.validateAgainstDatabase(
+                filteredAccounts, existingEmails, existingUsernames, existingDepIds, existingPosIds,
+                errorMessages, importErrors, accountRawFieldsMap
+        );
+        dbErrorCount = filteredAccounts.size() - finalAccountsToInsert.size();
 
-            if (dbErrors.isEmpty()) {
-                finalAccountsToInsert.add(acc);
-            } else {
-                errorMessages.add("Tài khoản '" + acc.getEmail() + "': " + String.join(", ", dbErrors) + ".");
-            }
-        }
-
-        // PHASE 3: Insert
+        // PHASE 3: Thực hiện Batch Insert lưu các bản ghi hoàn toàn hợp lệ xuống DB
         if (!finalAccountsToInsert.isEmpty()) {
             accountRepository.createAccountsBatch(finalAccountsToInsert);
         }
 
-        return reportFinalResult(finalAccountsToInsert.size(), errorMessages);
+        // Ghi báo cáo danh sách dòng lỗi ra file CSV
+        ImportError.writeErrorsToCSV(pathName, errorHeader, importErrors);
+
+        int successCount = finalAccountsToInsert.size();
+        int skippedCount = parseErrorCount + internalDupCount;
+        int failedCount = dbErrorCount;
+
+        return "Kết quả Import Account: Tổng=" + totalInputLines + ", Thành công=" + successCount + ", Bỏ (validate)=" + skippedCount + ", Lỗi DB=" + failedCount + ". Chi tiết lỗi đã ghi vào file.";
     }
 
-    private String reportErrors(String title, List<String> errors) {
-        StringBuilder sb = new StringBuilder(title + "\n");
-        sb.append("Chi tiết lỗi:\n");
-        for (int i = 0; i < Math.min(10, errors.size()); i++) {
-            sb.append("  + ").append(errors.get(i)).append("\n");
+    /**
+     * Phương thức validate từng dòng trong file CSV.
+     * Trả về đối tượng Account nếu dòng dữ liệu hợp lệ về định dạng, ngược lại trả về null.
+     */
+    private Account validateAccountRow(String[] fields, int lineNum, List<String> errorMessages, List<ImportError> importErrors) {
+        // Kiểm tra dòng có đủ các cột dữ liệu cơ bản
+        if (fields.length < 3) {
+            String msg = "Thiếu cột dữ liệu cơ bản.";
+            errorMessages.add("Dòng " + lineNum + ": " + msg);
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
         }
-        return sb.toString();
+
+        String email = fields[0].trim();
+        String fullname = fields[1].trim();
+        String username = fields[2].trim();
+        String department = fields[3].trim();
+        String position = fields[4].trim();
+
+        // Kiểm tra các trường dữ liệu không được để trống (Not Null)
+        List<String> rowFormatErrors = new ArrayList<>();
+        if (email.isEmpty()) rowFormatErrors.add("Thiếu Email");
+        if (fullname.isEmpty()) rowFormatErrors.add("Thiếu Fullname");
+        if (username.isEmpty()) rowFormatErrors.add("Thiếu Username");
+
+        // Kiểm tra giới hạn độ dài ký tự tối đa là 100 (varchar 100)
+        if (email.length() > 100) rowFormatErrors.add("Độ dài Email không được vượt quá 100 ký tự");
+        if (fullname.length() > 100) rowFormatErrors.add("Độ dài Fullname không được vượt quá 100 ký tự");
+        if (username.length() > 100) rowFormatErrors.add("Độ dài Username không được vượt quá 100 ký tự");
+
+        // Nếu phát hiện lỗi định dạng cơ bản, ghi nhận lỗi và trả về null
+        if (!rowFormatErrors.isEmpty()) {
+            String msg = String.join(", ", rowFormatErrors) + ".";
+            errorMessages.add("Dòng " + lineNum + ": " + msg);
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
+        }
+
+        // Kiểm tra định dạng Email có hợp lệ hay không bằng biểu thức chính quy
+        if (!isValidEmail(email)) {
+            String msg = "Định dạng Email '" + email + "' không hợp lệ.";
+            errorMessages.add("Dòng " + lineNum + ": " + msg);
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
+        }
+
+        // Phân tích và ép kiểu cho DepartmentID và PositionID (nếu có) sang số nguyên
+        Department dep = null;
+        Position pos = null;
+        try {
+            if (fields.length >= 4 && !department.isEmpty()) {
+                int depId = Integer.parseInt(department);
+                dep = new Department();
+                dep.setDepartmentID(depId);
+            }
+            if (fields.length >= 5 && !position.isEmpty()) {
+                int posId = Integer.parseInt(position);
+                pos = new Position();
+                pos.setPositionID(posId);
+            }
+        } catch (NumberFormatException e) {
+            String msg = "ID phòng ban hoặc chức vụ phải là số nguyên.";
+            errorMessages.add("Dòng " + lineNum + ": " + msg);
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
+        }
+
+        return new Account(0, email, username, fullname, dep, pos, null);
     }
 
-    private String reportFinalResult(int successCount, List<String> errors) {
-        StringBuilder sb = new StringBuilder("Kết quả Import Account:\n");
-        sb.append("- Thành công: ").append(successCount).append(" tài khoản\n");
-        sb.append("- Bỏ qua/Lỗi: ").append(errors.size()).append(" tài khoản\n");
-        if (!errors.isEmpty()) {
-            sb.append("--- Chi tiết lỗi (Hiển thị tối đa 10 dòng) ---\n");
-            for (int i = 0; i < Math.min(10, errors.size()); i++) {
-                sb.append("  + ").append(errors.get(i)).append("\n");
+    /**
+     * Phương thức lọc các tài khoản bị trùng lặp dữ liệu (Email hoặc Username) ngay trong file CSV.
+     */
+    private List<Account> filterInternalDuplicates(
+            List<Account> allRows,
+            Map<String, Integer> emailFreq,
+            Map<String, Integer> usernameFreq,
+            List<String> errorMessages,
+            List<ImportError> importErrors,
+            Map<Account, List<String>> rawFieldsMap
+    ) {
+        List<Account> filtered = new ArrayList<>();
+        for (Account acc : allRows) {
+            List<String> internalDupErrors = new ArrayList<>();
+            // Kiểm tra trùng email
+            if (emailFreq.get(acc.getEmail()) > 1) {
+                internalDupErrors.add("Email lặp lại trong file");
+            }
+            // Kiểm tra trùng username
+            if (usernameFreq.get(acc.getUsername()) > 1) {
+                internalDupErrors.add("Username lặp lại trong file");
+            }
+
+            // Nếu không trùng lặp thì giữ lại, ngược lại ghi nhận báo cáo lỗi
+            if (internalDupErrors.isEmpty()) {
+                filtered.add(acc);
+            } else {
+                String msg = String.join(", ", internalDupErrors) + ".";
+                errorMessages.add("Tài khoản '" + acc.getEmail() + "': " + msg);
+                importErrors.add(new ImportError(rawFieldsMap.get(acc), msg));
             }
         }
-        return sb.toString();
+        return filtered;
     }
+
+    /**
+     * Phương thức đối chiếu dữ liệu với Database để kiểm tra trùng lặp Email/Username
+     * và tồn tại khóa ngoại (DepartmentID, PositionID).
+     */
+    private List<Account> validateAgainstDatabase(
+            List<Account> accounts,
+            List<String> existingEmails,
+            List<String> existingUsernames,
+            List<Integer> existingDepIds,
+            List<Integer> existingPosIds,
+            List<String> errorMessages,
+            List<ImportError> importErrors,
+            Map<Account, List<String>> rawFieldsMap
+    ) {
+        List<Account> validToInsert = new ArrayList<>();
+        for (Account acc : accounts) {
+            List<String> dbErrors = new ArrayList<>();
+            
+            // Check trùng email dưới DB
+            if (existingEmails.contains(acc.getEmail())) dbErrors.add("Email đã tồn tại");
+            // Check trùng username dưới DB
+            if (existingUsernames.contains(acc.getUsername())) dbErrors.add("Username đã tồn tại");
+            
+            // Check tồn tại DepartmentID
+            if (acc.getDepartment() != null && !existingDepIds.contains(acc.getDepartment().getDepartmentID())) {
+                dbErrors.add("DepartmentID " + acc.getDepartment().getDepartmentID() + " không tồn tại");
+            }
+            // Check tồn tại PositionID
+            if (acc.getPosition() != null && !existingPosIds.contains(acc.getPosition().getPositionID())) {
+                dbErrors.add("PositionID " + acc.getPosition().getPositionID() + " không tồn tại");
+            }
+
+            // Nếu hoàn toàn hợp lệ với DB thì đưa vào hàng đợi insert, ngược lại lưu lỗi
+            if (dbErrors.isEmpty()) {
+                validToInsert.add(acc);
+            } else {
+                String msg = String.join(", ", dbErrors) + ".";
+                errorMessages.add("Tài khoản '" + acc.getEmail() + "': " + msg);
+                importErrors.add(new ImportError(rawFieldsMap.get(acc), msg));
+            }
+        }
+        return validToInsert;
+    }
+
 }

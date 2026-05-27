@@ -5,14 +5,9 @@ import com.vti.backend.repository.impl.DepartmentRepositoryImpl;
 import com.vti.backend.service.IDepartmentService;
 import com.vti.entity.Department;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
+import com.vti.dto.ImportError;
 
 public class DepartmentServiceImpl implements IDepartmentService {
     private final IDepartmentRepository departmentRepository = new DepartmentRepositoryImpl();
@@ -54,65 +49,147 @@ public class DepartmentServiceImpl implements IDepartmentService {
 
     @Override
     public String importDepartmentCSV(String pathName) {
-        if (pathName == null || !pathName.endsWith(".csv")) {
+        // Kiểm tra file có tồn tại
+        File file = new File(pathName);
+        if (!file.exists()) {
+            return "File không tồn tại.";
+        }
+
+        // Kiểm tra phần mở rộng định dạng file có phải là .csv
+        if (!pathName.endsWith(".csv")) {
             return "Lỗi: Định dạng file không đúng!";
         }
 
-        List<String> namesInFile = new ArrayList<>();
+        List<String[]> allRows = new ArrayList<>();
+        List<ImportError> importErrors = new ArrayList<>();
+        
+        String headerLine = "";
+        
+        // Các biến đếm số lượng để hiển thị báo cáo tổng kết
+        int totalInputLines = 0;
+        int parseErrorCount = 0;   // Lỗi định dạng dòng / validation
+        int internalDupCount = 0; // Lỗi trùng lặp nội bộ trong file CSV
+        int dbErrorCount = 0;       // Lỗi do trùng lặp Database
+
+        // BƯỚC 1: Đọc tất cả các dòng từ file CSV (bỏ qua dòng trống)
         try (BufferedReader br = new BufferedReader(new FileReader(pathName))) {
-            String line = br.readLine(); // Bỏ qua Header
+            headerLine = br.readLine(); // Đọc dòng tiêu đề (Header)
+            String line;
             while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                String[] fields = line.split(",");
-                if (fields.length > 0) {
-                    namesInFile.add(fields[0].trim());
-                }
+                if (line.trim().isEmpty()) continue; // Bỏ qua dòng trống
+                totalInputLines++;
+                String[] fields = line.split(",", -1);
+                allRows.add(fields);
             }
         } catch (Exception e) {
             return "Lỗi khi đọc file: " + e.getMessage();
         }
 
-        if (namesInFile.isEmpty()) {
-            return "Cảnh báo: File không có dữ liệu.";
+        // Tạo dòng Header cho file báo cáo lỗi bằng cách thêm cột error_message ở cuối
+        String errorHeader = (headerLine != null ? headerLine.trim() : "department_name") + ",error_message";
+
+        // Nếu file không chứa dòng nào hợp lệ về dữ liệu
+        if (allRows.isEmpty()) {
+            ImportError.writeErrorsToCSV(pathName, errorHeader, importErrors);
+            int successCount = 0;
+            int skippedCount = parseErrorCount;
+            int failedCount = 0;
+            return "Kết quả Import: Tổng=" + totalInputLines + ", Thành công=" + successCount + ", Bỏ (validate)=" + skippedCount + ", Lỗi DB=" + failedCount + ". Chi tiết lỗi đã ghi vào file.";
         }
 
-        // 1. Lọc trùng ngay trong file (nếu file có 2 dòng giống hệt nhau)
-        Set<String> uniqueNamesInFile = new LinkedHashSet<>(namesInFile);
-
-        // 2. Kiểm tra những tên nào đã tồn tại trong DB (Chỉ gọi DB 1 lần)
-        List<String> existingNamesInDB = departmentRepository.findExistingNames(new ArrayList<>(uniqueNamesInFile));
-
-        // 3. Phân loại: Cái nào mới thì cho vào list để Insert, cái nào trùng thì báo cáo
-        List<Department> newDepartments = new ArrayList<>();
-        List<String> skippedNames = new ArrayList<>();
-
-        for (String name : uniqueNamesInFile) {
-            if (existingNamesInDB.contains(name)) {
-                skippedNames.add(name);
-            } else {
-                newDepartments.add(new Department(name));
+        // BƯỚC 2: Đếm tần suất xuất hiện của tên phòng ban trong file CSV (phục vụ lọc trùng)
+        Map<String, Integer> frequencyMap = new HashMap<>();
+        for (String[] fields : allRows) {
+            if (fields.length > 0) {
+                String name = fields[0].trim();
+                frequencyMap.put(name, frequencyMap.getOrDefault(name, 0) + 1);
             }
         }
 
-        // 4. Lưu vào DB bằng Batch (Chỉ gọi DB thêm 1 lần nữa)
+        // BƯỚC 3: Lọc các dòng hợp lệ & thu thập các tên cần kiểm tra dưới Database
+        List<String> namesToCheckDb = new ArrayList<>();
+        List<String[]> validRows = new ArrayList<>();
+
+        for (String[] fields : allRows) {
+            String name = validateAndParseDepartmentRow(fields, importErrors);
+            if (name == null) {
+                parseErrorCount++;
+                continue; // Lỗi định dạng dòng, bỏ qua và chuyển sang dòng tiếp theo
+            }
+
+            // Kiểm tra xem tên phòng ban có bị trùng lặp ngay trong file CSV hay không
+            if (frequencyMap.get(name) > 1) {
+                String msg = "Tên phòng ban lặp lại trong file.";
+                importErrors.add(new ImportError(Arrays.asList(fields), msg));
+                internalDupCount++;
+                continue;
+            }
+
+            namesToCheckDb.add(name);
+            validRows.add(fields);
+        }
+
+        // BƯỚC 4: Kiểm tra tồn tại trong Database
+        List<String> existingNamesInDB = departmentRepository.findExistingNames(namesToCheckDb);
+        List<Department> newDepartments = new ArrayList<>();
+        List<String> skippedNames = new ArrayList<>();
+
+        for (String[] fields : validRows) {
+            String name = fields[0].trim();
+            // Nếu tên phòng ban đã tồn tại trong DB, báo lỗi và bỏ qua
+            if (existingNamesInDB.contains(name)) {
+                String msg = "Phòng ban đã tồn tại.";
+                importErrors.add(new ImportError(Arrays.asList(fields), msg));
+                if (!skippedNames.contains(name)) {
+                    skippedNames.add(name);
+                }
+                dbErrorCount++;
+                continue;
+            }
+
+            newDepartments.add(new Department(name));
+        }
+
+        // BƯỚC 5: Thực hiện Batch Insert lưu các phòng ban mới vào DB
         boolean isSuccess = true;
         if (!newDepartments.isEmpty()) {
             isSuccess = departmentRepository.createDepartments(newDepartments);
         }
 
-        // 5. Trả về thông báo
+        // Ghi báo cáo danh sách dòng lỗi ra file CSV
+        ImportError.writeErrorsToCSV(pathName, errorHeader, importErrors);
+
         if (!isSuccess) return "Lỗi: Không thể lưu dữ liệu vào hệ thống.";
 
-        StringBuilder result = new StringBuilder();
-        result.append("Kết quả Import:\n");
-        result.append("- Thành công: ").append(newDepartments.size()).append(" phòng ban.\n");
-        if (!skippedNames.isEmpty()) {
-            result.append("- Bỏ qua (đã tồn tại): ").append(skippedNames.size());
-            if (skippedNames.size() <= 5) {
-                result.append(" (").append(String.join(", ", skippedNames)).append(")");
-            }
-        }
-        return result.toString();
+        int successCount = newDepartments.size();
+        int skippedCount = parseErrorCount + internalDupCount;
+        int failedCount = dbErrorCount;
+
+        return "Kết quả Import: Tổng=" + totalInputLines + ", Thành công=" + successCount + ", Bỏ (validate)=" + skippedCount + ", Lỗi DB=" + failedCount + ". Chi tiết lỗi đã ghi vào file.";
     }
 
+    /**
+     * Phương thức validate và phân tích (parse) từng dòng phòng ban trong file CSV.
+     * Trả về tên phòng ban (String) nếu dòng dữ liệu hợp lệ về định dạng, ngược lại trả về null.
+     */
+    private String validateAndParseDepartmentRow(String[] fields, List<ImportError> importErrors) {
+        // Kiểm tra xem dòng có chứa dữ liệu tên phòng ban hay không
+        if (fields.length == 0 || fields[0].trim().isEmpty()) {
+            String msg = "Thiếu tên phòng ban.";
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
+        }
+
+        String name = fields[0].trim();
+
+        // Kiểm tra giới hạn độ dài ký tự tối đa là 100 (varchar 100)
+        if (name.length() > 100) {
+            String msg = "Độ dài Tên phòng ban không được vượt quá 100 ký tự.";
+            importErrors.add(new ImportError(Arrays.asList(fields), msg));
+            return null;
+        }
+
+        return name;
+    }
+    
 }
