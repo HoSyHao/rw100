@@ -75,9 +75,9 @@ public class DepartmentFunc {
             System.out.println("+-----+--------------------+");
             System.out.printf("|%5s|%20s|\n", "ID", "NAME");
             System.out.println("+-----+--------------------+");
-            for (Department department : departmentList) {
+            departmentList.forEach(department -> {
                 System.out.printf("|%5s|%20s|\n", department.getDepartmentID(), department.getDepartmentName());
-            }
+            });
             System.out.println("+-----+--------------------+");
         }
     }

@@ -101,7 +101,7 @@ public class AccountFunc {
             System.out.println("+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+");
             System.out.printf("|%5s|%20s|%20s|%20s|%20s|%20s|%20s|\n", "ID", "EMAIL", "USERNAME", "FULLNAME", "DEPARTMENT", "POSITION", "CREATE DATE");
             System.out.println("+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+");
-            for (Account account : accounts) {
+            accounts.forEach(account -> {
                 System.out.printf("|%5s|%20s|%20s|%20s|%20s|%20s|%20s|\n",
                         account.getAccountID(),
                         account.getEmail(),
@@ -111,7 +111,7 @@ public class AccountFunc {
                         account.getPosition() != null ? account.getPosition().getPositionName() : "NULL",
                         account.getCreateDate()
                 );
-            }
+            });
             System.out.println("+-----+--------------------+--------------------+--------------------+--------------------+--------------------+--------------------+");
         }
     }

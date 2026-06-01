@@ -70,11 +70,11 @@ public class PositionFunc {
         System.out.printf("|%5s|%20s|\n", "ID", "NAME");
         System.out.println("+-----+--------------------+");
 
-        for (Position position : positions) {
+        positions.forEach(position -> {
             System.out.printf("|%5s|%20s|\n",
                     position.getPositionID(),
                     position.getPositionName());
-        }
+        });
 
         System.out.println("+-----+--------------------+");
     }
