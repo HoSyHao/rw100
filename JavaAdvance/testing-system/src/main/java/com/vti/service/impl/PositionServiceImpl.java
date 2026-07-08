@@ -4,6 +4,7 @@ import com.vti.dto.PositionDTO;
 import com.vti.dto.PositionFormForCreate;
 import com.vti.dto.PositionFormForUpdate;
 import com.vti.entity.Position;
+import com.vti.exception.DuplicateDataException;
 import com.vti.exception.ResourceNotFoundException;
 import com.vti.repository.IPositionRepository;
 import com.vti.service.IPositionService;
@@ -38,7 +39,7 @@ public class PositionServiceImpl implements IPositionService {
     @Override
     public PositionDTO save(PositionFormForCreate form) {
         if (positionRepository.existsByName(form.getName())) {
-            throw new RuntimeException("Position name already exists");
+            throw new DuplicateDataException("Position name already exists");
         }
         Position entity = new Position();
         entity.setName(form.getName());
@@ -53,7 +54,7 @@ public class PositionServiceImpl implements IPositionService {
 
         if (form.getName() != null && !form.getName().equals(entity.getName())) {
             if (positionRepository.existsByName(form.getName())) {
-                throw new RuntimeException("Position name already exists");
+                throw new DuplicateDataException("Position name already exists");
             }
             entity.setName(form.getName());
         }

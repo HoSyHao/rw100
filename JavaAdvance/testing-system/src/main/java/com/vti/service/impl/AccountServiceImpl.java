@@ -6,6 +6,7 @@ import com.vti.dto.AccountFormForUpdate;
 import com.vti.entity.Account;
 import com.vti.entity.Department;
 import com.vti.entity.Position;
+import com.vti.exception.DuplicateDataException;
 import com.vti.exception.ResourceNotFoundException;
 import com.vti.repository.IAccountRepository;
 import com.vti.repository.IDepartmentRepository;
@@ -48,10 +49,10 @@ public class AccountServiceImpl implements IAccountService {
     @Override
     public AccountDTO save(AccountFormForCreate form) {
         if (accountRepository.existsByUsername(form.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new DuplicateDataException("Username already exists");
         }
         if (accountRepository.existsByEmail(form.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new DuplicateDataException("Email already exists");
         }
 
         Account entity = new Account();
@@ -82,14 +83,14 @@ public class AccountServiceImpl implements IAccountService {
 
         if (form.getEmail() != null && !form.getEmail().equals(entity.getEmail())) {
             if (accountRepository.existsByEmail(form.getEmail())) {
-                throw new RuntimeException("Email already exists");
+                throw new DuplicateDataException("Email already exists");
             }
             entity.setEmail(form.getEmail());
         }
 
         if (form.getUsername() != null && !form.getUsername().equals(entity.getUsername())) {
             if (accountRepository.existsByUsername(form.getUsername())) {
-                throw new RuntimeException("Username already exists");
+                throw new DuplicateDataException("Username already exists");
             }
             entity.setUsername(form.getUsername());
         }

@@ -25,11 +25,19 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
     }
 
-    // Xử lý các lỗi RuntimeException tự ném ra (trùng lặp Unique)
-    @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<Map<String, String>> handleRuntimeExceptions(RuntimeException ex) {
+    // Xử lý các lỗi Duplicate (trùng lặp Unique)
+    @ExceptionHandler(DuplicateDataException.class)
+    public ResponseEntity<Map<String, String>> handleDuplicateDataExceptions(DuplicateDataException ex) {
         Map<String, String> response = new HashMap<>();
         response.put("error", ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Xử lý lỗi Không tìm thấy (404)
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, String>> handleResourceNotFoundExceptions(ResourceNotFoundException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 }

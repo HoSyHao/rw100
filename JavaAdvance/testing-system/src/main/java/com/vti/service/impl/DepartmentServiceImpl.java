@@ -4,14 +4,15 @@ import com.vti.dto.DepartmentDTO;
 import com.vti.dto.DepartmentFormForCreate;
 import com.vti.dto.DepartmentFormForUpdate;
 import com.vti.entity.Department;
+import com.vti.exception.DuplicateDataException;
 import com.vti.exception.ResourceNotFoundException;
 import com.vti.repository.IDepartmentRepository;
 import com.vti.service.IDepartmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DepartmentServiceImpl implements IDepartmentService {
@@ -20,12 +21,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
 
     @Override
     public List<DepartmentDTO> findAll() {
-        List<Department> departments = departmentRepository.findAll();
-        List<DepartmentDTO> dtos = new ArrayList<>();
-        for (Department entity : departments) {
-            dtos.add(mapToDTO(entity));
-        }
-        return dtos;
+        return departmentRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 
     @Override
@@ -38,7 +34,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
     @Override
     public DepartmentDTO save(DepartmentFormForCreate form) {
         if (departmentRepository.existsByName(form.getName())) {
-            throw new RuntimeException("Department name already exists");
+            throw new DuplicateDataException("Department name already exists");
         }
         Department entity = new Department();
         entity.setName(form.getName());
@@ -53,7 +49,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
 
         if (form.getName() != null && !form.getName().equals(entity.getName())) {
             if (departmentRepository.existsByName(form.getName())) {
-                throw new RuntimeException("Department name already exists");
+                throw new DuplicateDataException("Department name already exists");
             }
             entity.setName(form.getName());
         }
