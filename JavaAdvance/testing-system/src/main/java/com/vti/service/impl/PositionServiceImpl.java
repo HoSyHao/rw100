@@ -37,6 +37,9 @@ public class PositionServiceImpl implements IPositionService {
 
     @Override
     public PositionDTO save(PositionFormForCreate form) {
+        if (positionRepository.existsByName(form.getName())) {
+            throw new RuntimeException("Position name already exists");
+        }
         Position entity = new Position();
         entity.setName(form.getName());
         Position savedEntity = positionRepository.save(entity);
@@ -47,7 +50,14 @@ public class PositionServiceImpl implements IPositionService {
     public PositionDTO update(Integer id, PositionFormForUpdate form) {
         Position entity = positionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
-        entity.setName(form.getName());
+
+        if (form.getName() != null && !form.getName().equals(entity.getName())) {
+            if (positionRepository.existsByName(form.getName())) {
+                throw new RuntimeException("Position name already exists");
+            }
+            entity.setName(form.getName());
+        }
+
         Position updatedEntity = positionRepository.save(entity);
         return mapToDTO(updatedEntity);
     }

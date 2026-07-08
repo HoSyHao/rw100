@@ -37,6 +37,9 @@ public class DepartmentServiceImpl implements IDepartmentService {
 
     @Override
     public DepartmentDTO save(DepartmentFormForCreate form) {
+        if (departmentRepository.existsByName(form.getName())) {
+            throw new RuntimeException("Department name already exists");
+        }
         Department entity = new Department();
         entity.setName(form.getName());
         Department savedEntity = departmentRepository.save(entity);
@@ -47,7 +50,14 @@ public class DepartmentServiceImpl implements IDepartmentService {
     public DepartmentDTO update(Integer id, DepartmentFormForUpdate form) {
         Department entity = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        entity.setName(form.getName());
+
+        if (form.getName() != null && !form.getName().equals(entity.getName())) {
+            if (departmentRepository.existsByName(form.getName())) {
+                throw new RuntimeException("Department name already exists");
+            }
+            entity.setName(form.getName());
+        }
+
         Department updatedEntity = departmentRepository.save(entity);
         return mapToDTO(updatedEntity);
     }

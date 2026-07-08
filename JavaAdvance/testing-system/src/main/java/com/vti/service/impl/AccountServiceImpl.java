@@ -80,8 +80,20 @@ public class AccountServiceImpl implements IAccountService {
         Account entity = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
 
-        if (form.getEmail() != null) entity.setEmail(form.getEmail());
-        if (form.getUsername() != null) entity.setUsername(form.getUsername());
+        if (form.getEmail() != null && !form.getEmail().equals(entity.getEmail())) {
+            if (accountRepository.existsByEmail(form.getEmail())) {
+                throw new RuntimeException("Email already exists");
+            }
+            entity.setEmail(form.getEmail());
+        }
+
+        if (form.getUsername() != null && !form.getUsername().equals(entity.getUsername())) {
+            if (accountRepository.existsByUsername(form.getUsername())) {
+                throw new RuntimeException("Username already exists");
+            }
+            entity.setUsername(form.getUsername());
+        }
+
         if (form.getFullName() != null) entity.setFullName(form.getFullName());
 
         if (form.getDepartmentId() != null) {

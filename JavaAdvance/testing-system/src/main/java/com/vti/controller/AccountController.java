@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/accounts")
+@Validated
 public class AccountController {
 
     @Autowired
@@ -29,12 +33,12 @@ public class AccountController {
     }
 
     @PostMapping
-    public ResponseEntity<AccountDTO> save(@RequestBody AccountFormForCreate form){
+    public ResponseEntity<AccountDTO> save(@Valid @RequestBody AccountFormForCreate form){
         return new ResponseEntity<>(accountService.save(form), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AccountDTO> update(@PathVariable Integer id, @RequestBody AccountFormForUpdate form){
+    public ResponseEntity<AccountDTO> update(@PathVariable Integer id, @Valid @RequestBody AccountFormForUpdate form){
         return new ResponseEntity<>(accountService.update(id, form), HttpStatus.OK);
     }
 

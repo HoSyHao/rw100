@@ -18,8 +18,12 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/departments")
+@Validated
 public class DepartmentController {
 
     @Autowired
@@ -36,12 +40,12 @@ public class DepartmentController {
     }
 
     @PostMapping
-    public ResponseEntity<DepartmentDTO> save(@RequestBody DepartmentFormForCreate form){
+    public ResponseEntity<DepartmentDTO> save(@Valid @RequestBody DepartmentFormForCreate form){
         return new ResponseEntity<>(departmentService.save(form), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<DepartmentDTO> update(@PathVariable Integer id, @RequestBody DepartmentFormForUpdate form){
+    public ResponseEntity<DepartmentDTO> update(@PathVariable Integer id, @Valid @RequestBody DepartmentFormForUpdate form){
         return new ResponseEntity<>(departmentService.update(id, form), HttpStatus.OK);
     }
 

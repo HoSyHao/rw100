@@ -11,8 +11,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
+
 @RestController
 @RequestMapping("/api/v1/positions")
+@Validated
 public class PositionController {
 
     @Autowired
@@ -29,12 +33,12 @@ public class PositionController {
     }
 
     @PostMapping
-    public ResponseEntity<PositionDTO> save(@RequestBody PositionFormForCreate form){
+    public ResponseEntity<PositionDTO> save(@Valid @RequestBody PositionFormForCreate form){
         return new ResponseEntity<>(positionService.save(form), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PositionDTO> update(@PathVariable Integer id, @RequestBody PositionFormForUpdate form){
+    public ResponseEntity<PositionDTO> update(@PathVariable Integer id, @Valid @RequestBody PositionFormForUpdate form){
         return new ResponseEntity<>(positionService.update(id, form), HttpStatus.OK);
     }
 
