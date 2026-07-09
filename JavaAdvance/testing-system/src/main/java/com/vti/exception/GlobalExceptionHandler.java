@@ -10,34 +10,32 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.vti.dto.ApiResponse;
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     // Xử lý các lỗi từ Annotation Validation (@NotBlank, @Email, v.v.)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((FieldError) error).getField();
             String errorMessage = error.getDefaultMessage();
             errors.put(fieldName, errorMessage);
         });
-        return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), "Validation failed", errors), HttpStatus.BAD_REQUEST);
     }
 
     // Xử lý các lỗi Duplicate (trùng lặp Unique)
     @ExceptionHandler(DuplicateDataException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicateDataExceptions(DuplicateDataException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponse<String>> handleDuplicateDataExceptions(DuplicateDataException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.BAD_REQUEST.value(), ex.getMessage(), null), HttpStatus.BAD_REQUEST);
     }
 
-    // Xử lý lỗi Không tìm thấy (404)
+    // Xử lý riêng lỗi Không tìm thấy (404)
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleResourceNotFoundExceptions(ResourceNotFoundException ex) {
-        Map<String, String> response = new HashMap<>();
-        response.put("error", ex.getMessage());
-        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    public ResponseEntity<ApiResponse<String>> handleResourceNotFoundExceptions(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.NOT_FOUND.value(), ex.getMessage(), null), HttpStatus.NOT_FOUND);
     }
 }

@@ -12,11 +12,12 @@ import com.vti.repository.IAccountRepository;
 import com.vti.repository.IDepartmentRepository;
 import com.vti.repository.IPositionRepository;
 import com.vti.service.IAccountService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AccountServiceImpl implements IAccountService {
@@ -29,21 +30,19 @@ public class AccountServiceImpl implements IAccountService {
     @Autowired
     private IPositionRepository positionRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     public List<AccountDTO> findAll() {
-        List<Account> accounts = accountRepository.findAll();
-        List<AccountDTO> dtos = new ArrayList<>();
-        for (Account entity : accounts) {
-            dtos.add(mapToDTO(entity));
-        }
-        return dtos;
+        return accountRepository.findAll().stream().map(account -> modelMapper.map(account, AccountDTO.class)).collect(Collectors.toList());
     }
 
     @Override
     public AccountDTO findById(Integer id) {
         Account entity = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
-        return mapToDTO(entity);
+        return modelMapper.map(entity, AccountDTO.class);
     }
 
     @Override
@@ -55,25 +54,21 @@ public class AccountServiceImpl implements IAccountService {
             throw new DuplicateDataException("Email already exists");
         }
 
+        Department department = departmentRepository.findById(form.getDepartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + form.getDepartmentId()));
+
+        Position position = positionRepository.findById(form.getPositionId())
+                .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + form.getPositionId()));
+
         Account entity = new Account();
         entity.setEmail(form.getEmail());
         entity.setUsername(form.getUsername());
         entity.setFullName(form.getFullName());
-
-        if (form.getDepartmentId() != null) {
-            Department department = departmentRepository.findById(form.getDepartmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + form.getDepartmentId()));
-            entity.setDepartment(department);
-        }
-
-        if (form.getPositionId() != null) {
-            Position position = positionRepository.findById(form.getPositionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + form.getPositionId()));
-            entity.setPosition(position);
-        }
+        entity.setDepartment(department);
+        entity.setPosition(position);
 
         Account savedEntity = accountRepository.save(entity);
-        return mapToDTO(savedEntity);
+        return modelMapper.map(savedEntity, AccountDTO.class);
     }
 
     @Override
@@ -95,26 +90,24 @@ public class AccountServiceImpl implements IAccountService {
             entity.setUsername(form.getUsername());
         }
 
-        if (form.getFullName() != null) entity.setFullName(form.getFullName());
+        if (form.getFullName() != null) {
+            entity.setFullName(form.getFullName());
+        }
 
         if (form.getDepartmentId() != null) {
             Department department = departmentRepository.findById(form.getDepartmentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + form.getDepartmentId()));
             entity.setDepartment(department);
-        } else {
-            entity.setDepartment(null);
         }
 
         if (form.getPositionId() != null) {
             Position position = positionRepository.findById(form.getPositionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + form.getPositionId()));
             entity.setPosition(position);
-        } else {
-            entity.setPosition(null);
         }
 
         Account updatedEntity = accountRepository.save(entity);
-        return mapToDTO(updatedEntity);
+        return modelMapper.map(updatedEntity, AccountDTO.class);
     }
 
     @Override
@@ -128,19 +121,7 @@ public class AccountServiceImpl implements IAccountService {
 
     @Override
     public String deleteByIds(List<Integer> ids) {
-        accountRepository.deleteAllByIdInBatch(ids);
-        return "Deleted " + ids.size() + " accounts successfully";
-    }
-
-    private AccountDTO mapToDTO(Account entity) {
-        AccountDTO dto = new AccountDTO();
-        dto.setId(entity.getId());
-        dto.setEmail(entity.getEmail());
-        dto.setUsername(entity.getUsername());
-        dto.setFullName(entity.getFullName());
-        if (entity.getDepartment() != null) dto.setDepartmentName(entity.getDepartment().getName());
-        if (entity.getPosition() != null) dto.setPositionName(entity.getPosition().getName().toString());
-        dto.setCreateDate(entity.getCreateDate());
-        return dto;
+        int count = accountRepository.customDeleteByIds(ids);
+        return "Deleted " + count + " accounts successfully";
     }
 }

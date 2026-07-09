@@ -8,32 +8,31 @@ import com.vti.exception.DuplicateDataException;
 import com.vti.exception.ResourceNotFoundException;
 import com.vti.repository.IPositionRepository;
 import com.vti.service.IPositionService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PositionServiceImpl implements IPositionService {
     @Autowired
     private IPositionRepository positionRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     public List<PositionDTO> findAll() {
-        List<Position> positions = positionRepository.findAll();
-        List<PositionDTO> dtos = new ArrayList<>();
-        for (Position entity : positions) {
-            dtos.add(mapToDTO(entity));
-        }
-        return dtos;
+        return positionRepository.findAll().stream().map(position -> modelMapper.map(position, PositionDTO.class)).collect(Collectors.toList());
     }
 
     @Override
     public PositionDTO findById(Integer id) {
         Position entity = positionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Position not found with id: " + id));
-        return mapToDTO(entity);
+        return modelMapper.map(entity, PositionDTO.class);
     }
 
     @Override
@@ -44,7 +43,7 @@ public class PositionServiceImpl implements IPositionService {
         Position entity = new Position();
         entity.setName(form.getName());
         Position savedEntity = positionRepository.save(entity);
-        return mapToDTO(savedEntity);
+        return modelMapper.map(savedEntity, PositionDTO.class);
     }
 
     @Override
@@ -60,7 +59,7 @@ public class PositionServiceImpl implements IPositionService {
         }
 
         Position updatedEntity = positionRepository.save(entity);
-        return mapToDTO(updatedEntity);
+        return modelMapper.map(updatedEntity, PositionDTO.class);
     }
 
     @Override
@@ -74,14 +73,7 @@ public class PositionServiceImpl implements IPositionService {
 
     @Override
     public String deleteByIds(List<Integer> ids) {
-        positionRepository.deleteAllByIdInBatch(ids);
-        return "Deleted " + ids.size() + " positions successfully";
-    }
-
-    private PositionDTO mapToDTO(Position entity) {
-        PositionDTO dto = new PositionDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        return dto;
+        int count = positionRepository.customDeleteByIds(ids);
+        return "Deleted " + count + " positions successfully";
     }
 }

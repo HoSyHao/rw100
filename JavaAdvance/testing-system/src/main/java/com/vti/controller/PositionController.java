@@ -14,6 +14,8 @@ import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 
+import com.vti.dto.ApiResponse;
+
 @RestController
 @RequestMapping("/api/v1/positions")
 @Validated
@@ -23,32 +25,32 @@ public class PositionController {
     private IPositionService positionService;
 
     @GetMapping
-    public ResponseEntity<List<PositionDTO>> findAll(){
-        return new ResponseEntity<>(positionService.findAll(), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<List<PositionDTO>>> getAll(){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Get all positions successfully", positionService.findAll()), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PositionDTO> findById(@PathVariable Integer id){
-        return new ResponseEntity<>(positionService.findById(id), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<PositionDTO>> getById(@PathVariable Integer id){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Get position successfully", positionService.findById(id)), HttpStatus.OK);
     }
 
     @PostMapping
-    public ResponseEntity<PositionDTO> save(@Valid @RequestBody PositionFormForCreate form){
-        return new ResponseEntity<>(positionService.save(form), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponse<PositionDTO>> save(@Valid @RequestBody PositionFormForCreate form){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.CREATED.value(), "Create position successfully", positionService.save(form)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PositionDTO> update(@PathVariable Integer id, @Valid @RequestBody PositionFormForUpdate form){
-        return new ResponseEntity<>(positionService.update(id, form), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<PositionDTO>> update(@PathVariable Integer id, @Valid @RequestBody PositionFormForUpdate form){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Update position successfully", positionService.update(id, form)), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Integer id){
-        return new ResponseEntity<>(positionService.delete(id), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Integer id){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Delete position successfully", positionService.delete(id)), HttpStatus.OK);
     }
 
     @DeleteMapping("/bulk")
-    public ResponseEntity<String> deleteByIds(@RequestBody List<Integer> ids){
-        return new ResponseEntity<>(positionService.deleteByIds(ids), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<String>> deleteByIds(@RequestBody List<Integer> ids){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Bulk delete positions successfully", positionService.deleteByIds(ids)), HttpStatus.OK);
     }
 }

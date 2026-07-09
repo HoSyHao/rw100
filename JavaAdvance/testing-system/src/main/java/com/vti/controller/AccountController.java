@@ -14,6 +14,8 @@ import java.util.List;
 import org.springframework.validation.annotation.Validated;
 import jakarta.validation.Valid;
 
+import com.vti.dto.ApiResponse;
+
 @RestController
 @RequestMapping("/api/v1/accounts")
 @Validated
@@ -23,32 +25,32 @@ public class AccountController {
     private IAccountService accountService;
 
     @GetMapping
-    public ResponseEntity<List<AccountDTO>> findAll(){
-        return new ResponseEntity<>(accountService.findAll(), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<List<AccountDTO>>> getAll(){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Get all accounts successfully", accountService.findAll()), HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<AccountDTO> findById(@PathVariable Integer id){
-        return new ResponseEntity<>(accountService.findById(id), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<AccountDTO>> getById(@PathVariable Integer id){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Get account successfully", accountService.findById(id)), HttpStatus.OK);
     }
 
     @PostMapping
-    public ResponseEntity<AccountDTO> save(@Valid @RequestBody AccountFormForCreate form){
-        return new ResponseEntity<>(accountService.save(form), HttpStatus.CREATED);
+    public ResponseEntity<ApiResponse<AccountDTO>> save(@Valid @RequestBody AccountFormForCreate form){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.CREATED.value(), "Create account successfully", accountService.save(form)), HttpStatus.CREATED);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AccountDTO> update(@PathVariable Integer id, @Valid @RequestBody AccountFormForUpdate form){
-        return new ResponseEntity<>(accountService.update(id, form), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<AccountDTO>> update(@PathVariable Integer id, @Valid @RequestBody AccountFormForUpdate form){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Update account successfully", accountService.update(id, form)), HttpStatus.OK);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(@PathVariable Integer id){
-        return new ResponseEntity<>(accountService.delete(id), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<String>> delete(@PathVariable Integer id){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Delete account successfully", accountService.delete(id)), HttpStatus.OK);
     }
 
     @DeleteMapping("/bulk")
-    public ResponseEntity<String> deleteByIds(@RequestBody List<Integer> ids){
-        return new ResponseEntity<>(accountService.deleteByIds(ids), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<String>> deleteByIds(@RequestBody List<Integer> ids){
+        return new ResponseEntity<>(new ApiResponse<>(HttpStatus.OK.value(), "Bulk delete accounts successfully", accountService.deleteByIds(ids)), HttpStatus.OK);
     }
 }

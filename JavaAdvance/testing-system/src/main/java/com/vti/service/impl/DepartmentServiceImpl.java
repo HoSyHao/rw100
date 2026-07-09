@@ -8,6 +8,7 @@ import com.vti.exception.DuplicateDataException;
 import com.vti.exception.ResourceNotFoundException;
 import com.vti.repository.IDepartmentRepository;
 import com.vti.service.IDepartmentService;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -19,16 +20,26 @@ public class DepartmentServiceImpl implements IDepartmentService {
     @Autowired
     private IDepartmentRepository departmentRepository;
 
+    @Autowired
+    private ModelMapper modelMapper;
+
     @Override
     public List<DepartmentDTO> findAll() {
-        return departmentRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
+        return departmentRepository.findAll().stream().map(department -> modelMapper.map(department, DepartmentDTO.class)).collect(Collectors.toList());
     }
 
     @Override
     public DepartmentDTO findById(Integer id) {
         Department entity = departmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Department not found with id: " + id));
-        return mapToDTO(entity);
+        return modelMapper.map(entity, DepartmentDTO.class);
+    }
+
+    @Override
+    public DepartmentDTO findByName(String name) {
+        Department entity = departmentRepository.findByName(name)
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found with name: " + name));
+        return modelMapper.map(entity, DepartmentDTO.class);
     }
 
     @Override
@@ -39,7 +50,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
         Department entity = new Department();
         entity.setName(form.getName());
         Department savedEntity = departmentRepository.save(entity);
-        return mapToDTO(savedEntity);
+        return modelMapper.map(savedEntity, DepartmentDTO.class);
     }
 
     @Override
@@ -55,7 +66,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
         }
 
         Department updatedEntity = departmentRepository.save(entity);
-        return mapToDTO(updatedEntity);
+        return modelMapper.map(updatedEntity, DepartmentDTO.class);
     }
 
     @Override
@@ -69,14 +80,7 @@ public class DepartmentServiceImpl implements IDepartmentService {
 
     @Override
     public String deleteByIds(List<Integer> ids) {
-        departmentRepository.deleteAllByIdInBatch(ids);
-        return "Deleted " + ids.size() + " departments successfully";
-    }
-    
-    private DepartmentDTO mapToDTO(Department entity) {
-        DepartmentDTO dto = new DepartmentDTO();
-        dto.setId(entity.getId());
-        dto.setName(entity.getName());
-        return dto;
+        int count = departmentRepository.customDeleteByIds(ids);
+        return "Deleted " + count + " departments successfully";
     }
 }
